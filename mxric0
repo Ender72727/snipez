@@ -1,0 +1,3634 @@
+local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+
+-- ============================================
+-- UI SETUP
+-- ============================================
+local Window = Library:CreateWindow({
+    Title = 'snipez | universal',
+    Center = true,
+    AutoShow = true,
+    TabPadding = 8,
+    MenuFadeTime = 0.2
+})
+
+local Tabs = {
+    Main = Window:AddTab('Game Select'),
+    ['UI Settings'] = Window:AddTab('UI Settings'),
+}
+
+-- ============================================
+-- GAME DATABASE
+-- ============================================
+local Games = {
+    [2788229376] = 'Da Hood',
+    [9872472334] = 'Rivals',
+    [662417684] = 'Lucky Block Battlegrounds',
+    [537413528] = 'Build A Boat For Treasure',
+    [13772365325] = 'Blade Ball',
+    [286090429] = 'Arsenal',
+}
+
+local GamesList = { 
+    'Da Hood', 
+    'Rivals', 
+    'Lucky Block Battlegrounds', 
+    'Build A Boat For Treasure',
+    'Blade Ball',
+    'Arsenal',
+    'Universal (WIP)' 
+}
+
+local RS = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- ============================================
+-- GAME-SPECIFIC MENU CREATION
+-- ============================================
+local function CreateGameMenu(gameName)
+    Library:Unload()
+    task.wait(0.3)
+
+    Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+    ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+    SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+
+    local GameWindow = Library:CreateWindow({
+        Title = 'snipez | ' .. gameName:lower(),
+        Center = true,
+        AutoShow = true,
+        TabPadding = 8,
+        MenuFadeTime = 0.2
+    })
+
+    local GameTabs = {}
+
+    -- ============================================
+    -- LUCKY BLOCK BATTLEGROUNDS
+    -- ============================================
+    if gameName == 'Lucky Block Battlegrounds' then
+        GameTabs.Main = GameWindow:AddTab('Main')
+        GameTabs.Misc = GameWindow:AddTab('Misc')
+        GameTabs.Settings = GameWindow:AddTab('Settings')
+
+        -- Block Opening
+        local BlockGroup = GameTabs.Main:AddLeftGroupbox('Block Opening')
+        
+        BlockGroup:AddDropdown('BlockType', {
+            Values = { 'Lucky Block', 'Super Block', 'Diamond Block', 'Rainbow Block', 'Galaxy Block' },
+            Default = 1,
+            Multi = false,
+            Text = 'Select Block Type',
+            Tooltip = 'Choose which block to open for rewards'
+        })
+        
+        BlockGroup:AddInput('BlockAmount', {
+            Default = '1',
+            Numeric = true,
+            Finished = false,
+            Text = 'Amount to Open',
+            Placeholder = 'Enter amount...',
+            Tooltip = 'How many blocks to open'
+        })
+        
+        BlockGroup:AddButton({
+            Text = 'Open Blocks',
+            Func = function()
+                local blockType = Options.BlockType.Value
+                local amount = tonumber(Options.BlockAmount.Value) or 1
+                
+                Library:Notify('Opening ' .. amount .. 'x ' .. blockType .. '...')
+                
+                -- Dynamic remote name based on block type
+                local remoteName = "Spawn" .. blockType:gsub(" Block", "") .. "Block"
+                local remote = RS:FindFirstChild(remoteName)
+                
+                if remote then
+                    for i = 1, amount do
+                        pcall(function() 
+                            remote:FireServer() 
+                        end)
+                        task.wait(0.0002) -- Fast but safe delay
+                    end
+                    Library:Notify('Successfully opened ' .. amount .. ' blocks!')
+                else
+                    Library:Notify('Error: Remote not found!', 5)
+                end
+            end,
+            DoubleClick = false,
+            Tooltip = 'Opens the selected blocks and claims rewards'
+        })
+        
+        BlockGroup:AddDivider()
+
+        -- Weapons Section
+        local WeaponsGroup = GameTabs.Main:AddRightGroupbox('Weapons')
+        
+        WeaponsGroup:AddButton({
+            Text = 'Get All Weapons',
+            Func = function() 
+                Library:Notify('Getting all weapons...') 
+                -- Placeholder for weapon unlock logic
+                task.wait(0.5)
+                Library:Notify('Feature coming soon!', 3) 
+            end,
+            DoubleClick = true,
+            Tooltip = 'Double click to unlock all weapons'
+        })
+        
+        WeaponsGroup:AddLabel('⚠ Double click to confirm')
+
+        -- Misc Tab
+        local PlayerGroup = GameTabs.Misc:AddLeftGroupbox('Player')
+
+        PlayerGroup:AddSlider('WalkSpeed', {
+            Text = 'Walk Speed',
+            Min = 16,
+            Max = 200,
+            Default = 16,
+            Rounding = 0,
+            Compact = false,
+            Tooltip = 'Adjust your walk speed'
+        })
+
+        PlayerGroup:AddSlider('JumpPower', {
+            Text = 'Jump Power',
+            Min = 50,
+            Max = 300,
+            Default = 50,
+            Rounding = 0,
+            Compact = false,
+            Tooltip = 'Adjust your jump power'
+        })
+
+        task.spawn(function()
+            while task.wait() do
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("Humanoid") then
+                        local hum = char.Humanoid
+                        if Options.WalkSpeed then
+                            hum.WalkSpeed = Options.WalkSpeed.Value
+                        end
+                        if Options.JumpPower then
+                            hum.JumpPower = Options.JumpPower.Value
+                        end
+                    end
+                end)
+            end
+        end)
+
+        PlayerGroup:AddToggle('InfiniteJump', {
+            Text = 'Infinite Jump',
+            Default = false,
+            Tooltip = 'Jump infinitely in the air'
+        })
+
+        game:GetService("UserInputService").JumpRequest:Connect(function()
+            if Toggles.InfiniteJump and Toggles.InfiniteJump.Value then
+                pcall(function()
+                    LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end)
+            end
+        end)
+
+        PlayerGroup:AddToggle('NoClip', {
+            Text = 'No Clip',
+            Default = false,
+            Tooltip = 'Walk through walls'
+        })
+
+        task.spawn(function()
+            game:GetService("RunService").Stepped:Connect(function()
+                if Toggles.NoClip and Toggles.NoClip.Value then
+                    pcall(function()
+                        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                            end
+                        end
+                    end)
+                end
+            end)
+        end)
+
+        -- Combat & Visual
+        local CombatGroup = GameTabs.Misc:AddRightGroupbox('Visual & Utility')
+
+        CombatGroup:AddSlider('FOV', {
+            Text = 'Field of View',
+            Min = 70,
+            Max = 120,
+            Default = 70,
+            Rounding = 0,
+            Compact = false,
+            Tooltip = 'Adjust camera FOV'
+        })
+
+        task.spawn(function()
+            while task.wait() do
+                pcall(function()
+                    if Options.FOV then
+                        workspace.CurrentCamera.FieldOfView = Options.FOV.Value
+                    end
+                end)
+            end
+        end)
+
+        CombatGroup:AddButton({
+            Text = 'Anti AFK',
+            Func = function()
+                local vu = game:GetService("VirtualUser")
+                LocalPlayer.Idled:Connect(function()
+                    vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                    task.wait(1)
+                    vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                end)
+                Library:Notify('Anti AFK enabled!', 3)
+            end,
+            Tooltip = 'Prevents getting kicked for inactivity'
+        })
+
+        CombatGroup:AddToggle('RemoveFog', {
+            Text = 'Remove Fog',
+            Default = false,
+            Tooltip = 'Removes fog for better visibility'
+        }):OnChanged(function(state)
+            local Lighting = game:GetService("Lighting")
+            if state then
+                Lighting.FogEnd = 100000
+                for _, v in pairs(Lighting:GetDescendants()) do
+                    if v:IsA("Atmosphere") then
+                        v.Density = 0
+                    end
+                end
+            else
+                Lighting.FogEnd = 10000
+            end
+        end)
+
+    -- ============================================
+    -- BUILD A BOAT FOR TREASURE
+    -- ============================================
+    elseif gameName == 'Build A Boat For Treasure' then
+        GameTabs.Main = GameWindow:AddTab('Main')
+        GameTabs.Misc = GameWindow:AddTab('Misc')
+        GameTabs.Settings = GameWindow:AddTab('Settings')
+
+        -- MAIN TAB - Player Features
+        local PlayerGroup = GameTabs.Main:AddLeftGroupbox('Player')
+
+        PlayerGroup:AddSlider('WalkSpeed', {
+            Text = 'Walk Speed',
+            Min = 16,
+            Max = 200,
+            Default = 16,
+            Rounding = 0,
+            Compact = false,
+            Tooltip = 'Adjust your walk speed'
+        })
+
+        PlayerGroup:AddSlider('JumpPower', {
+            Text = 'Jump Power',
+            Min = 50,
+            Max = 300,
+            Default = 50,
+            Rounding = 0,
+            Compact = false,
+            Tooltip = 'Adjust your jump power'
+        })
+
+        task.spawn(function()
+            while task.wait() do
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("Humanoid") then
+                        local hum = char.Humanoid
+                        if Options.WalkSpeed then
+                            hum.WalkSpeed = Options.WalkSpeed.Value
+                        end
+                        if Options.JumpPower then
+                            hum.JumpPower = Options.JumpPower.Value
+                        end
+                    end
+                end)
+            end
+        end)
+
+        PlayerGroup:AddToggle('InfiniteJump', {
+            Text = 'Infinite Jump',
+            Default = false,
+            Tooltip = 'Jump infinitely'
+        })
+
+        game:GetService("UserInputService").JumpRequest:Connect(function()
+            if Toggles.InfiniteJump and Toggles.InfiniteJump.Value then
+                pcall(function()
+                    LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end)
+            end
+        end)
+
+        PlayerGroup:AddToggle('NoClip', {
+            Text = 'No Clip',
+            Default = false,
+            Tooltip = 'Walk through walls'
+        })
+
+        task.spawn(function()
+            game:GetService("RunService").Stepped:Connect(function()
+                if Toggles.NoClip and Toggles.NoClip.Value then
+                    pcall(function()
+                        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                            end
+                        end
+                    end)
+                end
+            end)
+        end)
+
+        -- Build Tools
+        local BuildGroup = GameTabs.Main:AddRightGroupbox('Auto Farm')
+
+        BuildGroup:AddToggle('AutoFarm', {
+            Text = 'Auto Farm Stages',
+            Default = false,
+            Tooltip = 'Automatically farms through stages to the chest'
+        })
+
+        BuildGroup:AddSlider('FarmSpeed', {
+            Text = 'Farm Speed',
+            Min = 0.1,
+            Max = 1,
+            Default = 0.3,
+            Rounding = 2,
+            Suffix = 's',
+            Compact = false,
+            Tooltip = 'Speed between stage teleports'
+        })
+
+        local autoFarmRunning = false
+        BuildGroup:AddButton({
+            Text = 'Start Auto Farm',
+            Func = function()
+                if not Toggles.AutoFarm.Value then
+                    Library:Notify('Enable Auto Farm toggle first!', 3)
+                    return
+                end
+                
+                if autoFarmRunning then
+                    Library:Notify('Auto Farm already running!', 3)
+                    return
+                end
+
+                autoFarmRunning = true
+                Library:Notify('Auto Farm started!', 3)
+
+                task.spawn(function()
+                    local speed = Options.FarmSpeed.Value
+                    local char = LocalPlayer.Character
+                    if not char then 
+                        autoFarmRunning = false
+                        return 
+                    end
+                    
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    if not hrp then 
+                        autoFarmRunning = false
+                        return 
+                    end
+
+                    -- Stage positions (approximate - adjust based on actual game)
+                    local stages = {
+                        Vector3.new(0, 50, -200),
+                        Vector3.new(150, 60, -800),
+                        Vector3.new(400, 70, -1500),
+                        Vector3.new(700, 80, -2500),
+                        Vector3.new(1100, 90, -3800),
+                        Vector3.new(1600, 100, -5300),
+                        Vector3.new(2200, 110, -7000),
+                        Vector3.new(2900, 120, -9000),
+                        Vector3.new(3700, 130, -11500),
+                    }
+
+                    for i, pos in ipairs(stages) do
+                        if not Toggles.AutoFarm.Value or not autoFarmRunning then 
+                            Library:Notify('Auto Farm stopped!', 3)
+                            autoFarmRunning = false
+                            return 
+                        end
+
+                        pcall(function()
+                            hrp.CFrame = CFrame.new(pos)
+                        end)
+
+                        Library:Notify('Stage ' .. i .. '/' .. #stages, 1)
+                        task.wait(speed)
+                    end
+
+                    Library:Notify('Auto Farm complete!', 3)
+                    autoFarmRunning = false
+                end)
+            end,
+            Tooltip = 'Starts the auto farm sequence'
+        })
+
+        BuildGroup:AddButton({
+            Text = 'Stop Auto Farm',
+            Func = function()
+                autoFarmRunning = false
+                Toggles.AutoFarm:SetValue(false)
+                Library:Notify('Auto Farm stopped!', 3)
+            end,
+            Tooltip = 'Stops the auto farm'
+        })
+
+        -- MISC TAB
+        local UtilityGroup = GameTabs.Misc:AddLeftGroupbox('Utility')
+
+        UtilityGroup:AddToggle('Fly', {
+            Text = 'Fly Mode',
+            Default = false,
+            Tooltip = 'Use WASD + Space/Ctrl to fly'
+        })
+
+        local flyConnection
+        local flyBodyVelocity
+        Toggles.Fly:OnChanged(function(state)
+            if state then
+                local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+
+                flyBodyVelocity = Instance.new("BodyVelocity")
+                flyBodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+                flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                flyBodyVelocity.Parent = hrp
+
+                flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                    if not Toggles.Fly.Value then return end
+
+                    local UIS = game:GetService("UserInputService")
+                    local cam = workspace.CurrentCamera.CFrame
+                    local move = Vector3.new()
+
+                    if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + cam.LookVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - cam.LookVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cam.RightVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.RightVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.Space) then move = move + Vector3.new(0, 1, 0) end
+                    if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then move = move - Vector3.new(0, 1, 0) end
+
+                    if move.Magnitude > 0 then
+                        flyBodyVelocity.Velocity = move.Unit * 80
+                    else
+                        flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                    end
+                end)
+            else
+                if flyConnection then 
+                    flyConnection:Disconnect()
+                    flyConnection = nil
+                end
+                if flyBodyVelocity then 
+                    flyBodyVelocity:Destroy()
+                    flyBodyVelocity = nil
+                end
+            end
+        end)
+
+        UtilityGroup:AddToggle('NoWaterDamage', {
+            Text = 'No Water Damage',
+            Default = false,
+            Tooltip = 'Prevents water/lava damage'
+        })
+
+        local waterParts = {}
+        Toggles.NoWaterDamage:OnChanged(function(state)
+            if state then
+                -- Find all water parts once and store them
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("Part") and (v.Name == "Water" or v.Name == "Lava") then
+                        waterParts[v] = v.CanTouch
+                        v.CanTouch = false
+                    end
+                end
+            else
+                -- Restore original CanTouch values
+                for part, originalValue in pairs(waterParts) do
+                    if part and part.Parent then
+                        part.CanTouch = originalValue
+                    end
+                end
+                waterParts = {}
+            end
+        end)
+
+        UtilityGroup:AddButton({
+            Text = 'Anti AFK',
+            Func = function()
+                local vu = game:GetService("VirtualUser")
+                LocalPlayer.Idled:Connect(function()
+                    vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                    task.wait(1)
+                    vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                end)
+                Library:Notify('Anti AFK enabled!', 3)
+            end,
+            Tooltip = 'Prevents being kicked for inactivity'
+        })
+
+        -- Teleports
+        local TeleportGroup = GameTabs.Misc:AddRightGroupbox('Teleports')
+
+        local teleportLocations = {
+            ["Spawn"] = Vector3.new(0, 50, 0),
+            ["Shop"] = Vector3.new(50, 50, 50),
+            ["Stage Start"] = Vector3.new(0, 50, -200),
+        }
+
+        local locationList = {}
+        for name, _ in pairs(teleportLocations) do
+            table.insert(locationList, name)
+        end
+
+        TeleportGroup:AddDropdown('TeleportLocation', {
+            Values = locationList,
+            Default = 1,
+            Multi = false,
+            Text = 'Location',
+        })
+
+        TeleportGroup:AddButton({
+            Text = 'Teleport',
+            Func = function()
+                local location = Options.TeleportLocation.Value
+                if location and teleportLocations[location] then
+                    pcall(function()
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(teleportLocations[location])
+                    end)
+                    Library:Notify('Teleported to ' .. location, 3)
+                end
+            end,
+        })
+
+    -- ============================================
+    -- DA HOOD
+    -- ============================================
+    elseif gameName == 'Da Hood' then
+        GameTabs.Rage = GameWindow:AddTab('Rage')
+        GameTabs.Legit = GameWindow:AddTab('Legit')
+        GameTabs.Player = GameWindow:AddTab('Player')
+        GameTabs.Visuals = GameWindow:AddTab('Visuals')
+        GameTabs.Misc = GameWindow:AddTab('Misc')
+        GameTabs.Main = GameWindow:AddTab('Main')
+        GameTabs.Settings = GameWindow:AddTab('Settings')
+        
+        -- Rage Tab
+        local RageGroup = GameTabs.Rage:AddLeftGroupbox('Aimbot')
+        RageGroup:AddLabel('Aimbot features coming soon...')
+        
+        -- Legit Tab
+        local LegitGroup = GameTabs.Legit:AddLeftGroupbox('Legit Aimbot')
+        LegitGroup:AddLabel('Legit aimbot features coming soon...')
+        
+        -- Player Tab
+        local PlayerGroup = GameTabs.Player:AddLeftGroupbox('Character')
+        PlayerGroup:AddLabel('Character features coming soon...')
+        
+        -- Visuals Tab
+        local ESPGroup = GameTabs.Visuals:AddLeftGroupbox('ESP')
+        
+        ESPGroup:AddToggle('ESPEnabled', {
+            Text = 'Enable ESP',
+            Default = false,
+            Tooltip = 'Master toggle for ESP'
+        })
+        
+        ESPGroup:AddDivider()
+        
+        ESPGroup:AddToggle('BoxESP', {
+            Text = 'Box',
+            Default = false,
+            Tooltip = 'Draws boxes around players'
+        })
+        
+        ESPGroup:AddToggle('SkeletonESP', {
+            Text = 'Skeleton',
+            Default = false,
+            Tooltip = 'Draws player skeletons'
+        })
+        
+        ESPGroup:AddToggle('TracersESP', {
+            Text = 'Tracers',
+            Default = false,
+            Tooltip = 'Draws lines to players'
+        })
+        
+        ESPGroup:AddToggle('HeadDot', {
+            Text = 'Head Dot',
+            Default = false,
+            Tooltip = 'Draws a dot on player heads'
+        })
+        
+        ESPGroup:AddToggle('NameESP', {
+            Text = 'Name',
+            Default = false,
+            Tooltip = 'Shows player names'
+        })
+        
+        ESPGroup:AddToggle('DistanceESP', {
+            Text = 'Distance',
+            Default = false,
+            Tooltip = 'Shows distance to players'
+        })
+        
+        ESPGroup:AddToggle('HealthESP', {
+            Text = 'Health Bar',
+            Default = false,
+            Tooltip = 'Shows player health bars'
+        })
+        
+        ESPGroup:AddDivider()
+        
+        ESPGroup:AddLabel('ESP Color'):AddColorPicker('ESPColor', {
+            Default = Color3.fromRGB(255, 255, 255),
+            Title = 'ESP Color',
+            Transparency = 0,
+        })
+        
+        ESPGroup:AddToggle('TeamCheck', {
+            Text = 'Team Check',
+            Default = false,
+            Tooltip = 'Don\'t show ESP on teammates'
+        })
+
+        -- ESP System
+        local ESPObjects = {}
+        
+        local function CreateESP(player)
+            if player == LocalPlayer then return end
+            if ESPObjects[player] then return end
+            
+            local espData = {
+                drawings = {}
+            }
+            
+            -- Box ESP with borders
+            espData.drawings.box = {}
+            espData.drawings.boxBorder = {}
+            
+            for i = 1, 4 do
+                espData.drawings.box[i] = Drawing.new("Line")
+                espData.drawings.box[i].Thickness = 1
+                espData.drawings.box[i].Color = Color3.new(1, 1, 1)
+                espData.drawings.box[i].Visible = false
+                
+                espData.drawings.boxBorder[i] = Drawing.new("Line")
+                espData.drawings.boxBorder[i].Thickness = 3
+                espData.drawings.boxBorder[i].Color = Color3.new(0, 0, 0)
+                espData.drawings.boxBorder[i].Visible = false
+            end
+            
+            -- Skeleton
+            espData.drawings.skeleton = {}
+            espData.drawings.skeletonBorder = {}
+            for i = 1, 6 do
+                espData.drawings.skeleton[i] = Drawing.new("Line")
+                espData.drawings.skeleton[i].Thickness = 1
+                espData.drawings.skeleton[i].Color = Color3.new(1, 1, 1)
+                espData.drawings.skeleton[i].Visible = false
+                
+                espData.drawings.skeletonBorder[i] = Drawing.new("Line")
+                espData.drawings.skeletonBorder[i].Thickness = 3
+                espData.drawings.skeletonBorder[i].Color = Color3.new(0, 0, 0)
+                espData.drawings.skeletonBorder[i].Visible = false
+            end
+            
+            -- Tracer with border
+            espData.drawings.tracerBorder = Drawing.new("Line")
+            espData.drawings.tracerBorder.Thickness = 3
+            espData.drawings.tracerBorder.Color = Color3.new(0, 0, 0)
+            espData.drawings.tracerBorder.Visible = false
+            
+            espData.drawings.tracer = Drawing.new("Line")
+            espData.drawings.tracer.Thickness = 1
+            espData.drawings.tracer.Color = Color3.new(1, 1, 1)
+            espData.drawings.tracer.Visible = false
+            
+            -- Head Dot with border
+            espData.drawings.headDotBorder = Drawing.new("Circle")
+            espData.drawings.headDotBorder.Thickness = 3
+            espData.drawings.headDotBorder.Radius = 4
+            espData.drawings.headDotBorder.Color = Color3.new(0, 0, 0)
+            espData.drawings.headDotBorder.Filled = false
+            espData.drawings.headDotBorder.Visible = false
+            
+            espData.drawings.headDot = Drawing.new("Circle")
+            espData.drawings.headDot.Thickness = 1
+            espData.drawings.headDot.Radius = 4
+            espData.drawings.headDot.Color = Color3.new(1, 1, 1)
+            espData.drawings.headDot.Filled = false
+            espData.drawings.headDot.Visible = false
+            
+            -- Name Text
+            espData.drawings.name = Drawing.new("Text")
+            espData.drawings.name.Size = 13
+            espData.drawings.name.Center = true
+            espData.drawings.name.Outline = true
+            espData.drawings.name.Color = Color3.new(1, 1, 1)
+            espData.drawings.name.Visible = false
+            
+            -- Distance Text
+            espData.drawings.distance = Drawing.new("Text")
+            espData.drawings.distance.Size = 13
+            espData.drawings.distance.Center = true
+            espData.drawings.distance.Outline = true
+            espData.drawings.distance.Color = Color3.new(1, 1, 1)
+            espData.drawings.distance.Visible = false
+            
+            -- Health Bar with border
+            espData.drawings.healthBarBorder = Drawing.new("Square")
+            espData.drawings.healthBarBorder.Thickness = 1
+            espData.drawings.healthBarBorder.Filled = true
+            espData.drawings.healthBarBorder.Color = Color3.new(0, 0, 0)
+            espData.drawings.healthBarBorder.Visible = false
+            
+            espData.drawings.healthBar = Drawing.new("Square")
+            espData.drawings.healthBar.Thickness = 1
+            espData.drawings.healthBar.Filled = true
+            espData.drawings.healthBar.Color = Color3.new(0, 1, 0)
+            espData.drawings.healthBar.Visible = false
+            
+            ESPObjects[player] = espData
+        end
+        
+        local function RemoveESP(player)
+            if ESPObjects[player] then
+                for _, drawing in pairs(ESPObjects[player].drawings) do
+                    if type(drawing) == "table" then
+                        for _, line in pairs(drawing) do
+                            line:Remove()
+                        end
+                    else
+                        drawing:Remove()
+                    end
+                end
+                ESPObjects[player] = nil
+            end
+        end
+        
+        local function UpdateESP()
+            if not Toggles.ESPEnabled or not Toggles.ESPEnabled.Value then 
+                -- Hide all ESP when disabled
+                for player, espData in pairs(ESPObjects) do
+                    for _, drawing in pairs(espData.drawings) do
+                        if type(drawing) == "table" then
+                            for _, line in pairs(drawing) do
+                                line.Visible = false
+                            end
+                        else
+                            drawing.Visible = false
+                        end
+                    end
+                end
+                return 
+            end
+            
+            local camera = workspace.CurrentCamera
+            local screenSize = camera.ViewportSize
+            local espColor = Options.ESPColor and Options.ESPColor.Value or Color3.new(1, 1, 1)
+            
+            for player, espData in pairs(ESPObjects) do
+                pcall(function()
+                    local char = player.Character
+                    if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Humanoid") then
+                        for _, drawing in pairs(espData.drawings) do
+                            if type(drawing) == "table" then
+                                for _, line in pairs(drawing) do
+                                    line.Visible = false
+                                end
+                            else
+                                drawing.Visible = false
+                            end
+                        end
+                        return
+                    end
+                    
+                    local hrp = char.HumanoidRootPart
+                    local head = char:FindFirstChild("Head")
+                    local humanoid = char.Humanoid
+                    
+                    -- Team check
+                    if Toggles.TeamCheck and Toggles.TeamCheck.Value then
+                        if player.Team == LocalPlayer.Team then
+                            for _, drawing in pairs(espData.drawings) do
+                                if type(drawing) == "table" then
+                                    for _, line in pairs(drawing) do
+                                        line.Visible = false
+                                    end
+                                else
+                                    drawing.Visible = false
+                                end
+                            end
+                            return
+                        end
+                    end
+                    
+                    local rootPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+                    
+                    if not onScreen or rootPos.Z < 0 then
+                        -- Hide ESP when not on screen
+                        for _, drawing in pairs(espData.drawings) do
+                            if type(drawing) == "table" then
+                                for _, line in pairs(drawing) do
+                                    line.Visible = false
+                                end
+                            else
+                                drawing.Visible = false
+                            end
+                        end
+                        return
+                    end
+                    
+                    local headPos = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                    local legPos = camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                    
+                    local boxHeight = math.abs(headPos.Y - legPos.Y)
+                    local boxWidth = boxHeight / 2.5
+                    
+                    local topLeft = Vector2.new(rootPos.X - boxWidth / 2, headPos.Y)
+                    local topRight = Vector2.new(rootPos.X + boxWidth / 2, headPos.Y)
+                    local bottomLeft = Vector2.new(rootPos.X - boxWidth / 2, legPos.Y)
+                    local bottomRight = Vector2.new(rootPos.X + boxWidth / 2, legPos.Y)
+                    
+                    -- Box ESP with border
+                    if Toggles.BoxESP and Toggles.BoxESP.Value then
+                        local boxLines = {
+                            {topLeft, topRight},
+                            {topRight, bottomRight},
+                            {bottomRight, bottomLeft},
+                            {bottomLeft, topLeft}
+                        }
+                        
+                        for i, line in ipairs(boxLines) do
+                            espData.drawings.boxBorder[i].From = line[1]
+                            espData.drawings.boxBorder[i].To = line[2]
+                            espData.drawings.boxBorder[i].Visible = true
+                            
+                            espData.drawings.box[i].From = line[1]
+                            espData.drawings.box[i].To = line[2]
+                            espData.drawings.box[i].Color = espColor
+                            espData.drawings.box[i].Visible = true
+                        end
+                    else
+                        for i = 1, 4 do
+                            espData.drawings.box[i].Visible = false
+                            espData.drawings.boxBorder[i].Visible = false
+                        end
+                    end
+                    
+                    -- Skeleton ESP
+                    if Toggles.SkeletonESP and Toggles.SkeletonESP.Value then
+                        local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+                        local leftArm = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm")
+                        local rightArm = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm")
+                        local leftLeg = char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftUpperLeg")
+                        local rightLeg = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightUpperLeg")
+                        
+                        if torso and leftArm and rightArm and leftLeg and rightLeg then
+                            local joints = {
+                                {head.Position, torso.Position},
+                                {torso.Position, leftArm.Position},
+                                {torso.Position, rightArm.Position},
+                                {torso.Position, leftLeg.Position},
+                                {torso.Position, rightLeg.Position},
+                            }
+                            
+                            for i, joint in ipairs(joints) do
+                                local p1 = camera:WorldToViewportPoint(joint[1])
+                                local p2 = camera:WorldToViewportPoint(joint[2])
+                                
+                                espData.drawings.skeletonBorder[i].From = Vector2.new(p1.X, p1.Y)
+                                espData.drawings.skeletonBorder[i].To = Vector2.new(p2.X, p2.Y)
+                                espData.drawings.skeletonBorder[i].Visible = true
+                                
+                                espData.drawings.skeleton[i].From = Vector2.new(p1.X, p1.Y)
+                                espData.drawings.skeleton[i].To = Vector2.new(p2.X, p2.Y)
+                                espData.drawings.skeleton[i].Color = espColor
+                                espData.drawings.skeleton[i].Visible = true
+                            end
+                        end
+                    else
+                        for i = 1, 6 do
+                            espData.drawings.skeleton[i].Visible = false
+                            espData.drawings.skeletonBorder[i].Visible = false
+                        end
+                    end
+                    
+                    -- Tracers
+                    if Toggles.TracersESP and Toggles.TracersESP.Value then
+                        espData.drawings.tracerBorder.From = Vector2.new(screenSize.X / 2, screenSize.Y)
+                        espData.drawings.tracerBorder.To = Vector2.new(rootPos.X, rootPos.Y)
+                        espData.drawings.tracerBorder.Visible = true
+                        
+                        espData.drawings.tracer.From = Vector2.new(screenSize.X / 2, screenSize.Y)
+                        espData.drawings.tracer.To = Vector2.new(rootPos.X, rootPos.Y)
+                        espData.drawings.tracer.Color = espColor
+                        espData.drawings.tracer.Visible = true
+                    else
+                        espData.drawings.tracer.Visible = false
+                        espData.drawings.tracerBorder.Visible = false
+                    end
+                    
+                    -- Head Dot
+                    if Toggles.HeadDot and Toggles.HeadDot.Value and head then
+                        local headScreenPos = camera:WorldToViewportPoint(head.Position)
+                        espData.drawings.headDotBorder.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
+                        espData.drawings.headDotBorder.Visible = true
+                        
+                        espData.drawings.headDot.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
+                        espData.drawings.headDot.Color = espColor
+                        espData.drawings.headDot.Visible = true
+                    else
+                        espData.drawings.headDot.Visible = false
+                        espData.drawings.headDotBorder.Visible = false
+                    end
+                    
+                    -- Name (positioned above box)
+                    if Toggles.NameESP and Toggles.NameESP.Value then
+                        espData.drawings.name.Text = player.Name
+                        espData.drawings.name.Position = Vector2.new(rootPos.X, topLeft.Y - 15)
+                        espData.drawings.name.Color = espColor
+                        espData.drawings.name.Visible = true
+                    else
+                        espData.drawings.name.Visible = false
+                    end
+                    
+                    -- Distance (positioned below box)
+                    if Toggles.DistanceESP and Toggles.DistanceESP.Value then
+                        local distance = (camera.CFrame.Position - hrp.Position).Magnitude
+                        espData.drawings.distance.Text = math.floor(distance) .. " studs"
+                        espData.drawings.distance.Position = Vector2.new(rootPos.X, bottomLeft.Y + 3)
+                        espData.drawings.distance.Color = espColor
+                        espData.drawings.distance.Visible = true
+                    else
+                        espData.drawings.distance.Visible = false
+                    end
+                    
+                    -- Health Bar
+                    if Toggles.HealthESP and Toggles.HealthESP.Value then
+                        local healthPercent = humanoid.Health / humanoid.MaxHealth
+                        
+                        espData.drawings.healthBarBorder.Size = Vector2.new(4, boxHeight + 2)
+                        espData.drawings.healthBarBorder.Position = Vector2.new(topLeft.X - 7, topLeft.Y - 1)
+                        espData.drawings.healthBarBorder.Visible = true
+                        
+                        espData.drawings.healthBar.Size = Vector2.new(2, boxHeight * healthPercent)
+                        espData.drawings.healthBar.Position = Vector2.new(topLeft.X - 6, topLeft.Y + (boxHeight * (1 - healthPercent)))
+                        espData.drawings.healthBar.Color = Color3.new(1 - healthPercent, healthPercent, 0)
+                        espData.drawings.healthBar.Visible = true
+                    else
+                        espData.drawings.healthBarBorder.Visible = false
+                        espData.drawings.healthBar.Visible = false
+                    end
+                end)
+                
+                if not success then
+                    -- If error occurs, hide all drawings for this player
+                    for _, drawing in pairs(espData.drawings) do
+                        if type(drawing) == "table" then
+                            for _, line in pairs(drawing) do
+                                pcall(function() line.Visible = false end)
+                            end
+                        else
+                            pcall(function() drawing.Visible = false end)
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- Setup ESP
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                CreateESP(player)
+            end
+        end
+        
+        Players.PlayerAdded:Connect(function(player)
+            task.wait(1)
+            CreateESP(player)
+        end)
+        
+        Players.PlayerRemoving:Connect(function(player)
+            RemoveESP(player)
+        end)
+        
+        game:GetService("RunService").RenderStepped:Connect(function()
+            UpdateESP()
+        end)
+        
+        -- Self ESP & Effects
+        local SelfGroup = GameTabs.Visuals:AddRightGroupbox('Self ESP')
+        
+        SelfGroup:AddToggle('Chams', {
+            Text = 'Chams',
+            Default = false,
+            Tooltip = 'Highlights your character'
+        })
+        
+        SelfGroup:AddLabel('Chams Color'):AddColorPicker('ChamsColor', {
+            Default = Color3.fromRGB(0, 255, 255),
+            Title = 'Chams Color',
+            Transparency = 0.3,
+        })
+        
+        SelfGroup:AddDivider()
+        
+        SelfGroup:AddToggle('AmbientColor', {
+            Text = 'Ambient Color',
+            Default = false,
+            Tooltip = 'Changes world ambient lighting'
+        })
+        
+        SelfGroup:AddLabel('Ambient'):AddColorPicker('AmbientPicker', {
+            Default = Color3.fromRGB(128, 128, 128),
+            Title = 'Ambient Color',
+            Transparency = 0,
+        })
+        
+        -- Gun Mods
+        local GunGroup = GameTabs.Visuals:AddLeftGroupbox('Gun Mods')
+        
+        GunGroup:AddToggle('NoRecoil', {
+            Text = 'No Recoil',
+            Default = false,
+            Tooltip = 'Removes weapon recoil'
+        })
+        
+        GunGroup:AddToggle('NoSpread', {
+            Text = 'No Spread',
+            Default = false,
+            Tooltip = 'Removes bullet spread'
+        })
+        
+        GunGroup:AddToggle('InfiniteAmmo', {
+            Text = 'Infinite Ammo',
+            Default = false,
+            Tooltip = 'Unlimited ammunition'
+        })
+        
+        GunGroup:AddToggle('RapidFire', {
+            Text = 'Rapid Fire',
+            Default = false,
+            Tooltip = 'Increases fire rate'
+        })
+        
+        GunGroup:AddSlider('FireRate', {
+            Text = 'Fire Rate',
+            Min = 1,
+            Max = 10,
+            Default = 1,
+            Rounding = 1,
+            Compact = false,
+            Tooltip = 'Adjust fire rate multiplier'
+        })
+        
+        -- Bullet Tracers
+        local TracerGroup = GameTabs.Visuals:AddRightGroupbox('Bullet Tracers')
+        
+        TracerGroup:AddToggle('BulletTracers', {
+            Text = 'Enable Tracers',
+            Default = false,
+            Tooltip = 'Shows bullet trajectories'
+        })
+        
+        TracerGroup:AddLabel('Tracer Color'):AddColorPicker('TracerColor', {
+            Default = Color3.fromRGB(255, 0, 0),
+            Title = 'Tracer Color',
+            Transparency = 0,
+        })
+        
+        TracerGroup:AddSlider('TracerDuration', {
+            Text = 'Duration',
+            Min = 0.5,
+            Max = 5,
+            Default = 2,
+            Rounding = 1,
+            Suffix = 's',
+            Compact = false,
+            Tooltip = 'How long tracers stay visible'
+        })
+        
+        TracerGroup:AddSlider('TracerWidth', {
+            Text = 'Width',
+            Min = 0.1,
+            Max = 1,
+            Default = 0.3,
+            Rounding = 2,
+            Compact = false,
+            Tooltip = 'Tracer line thickness'
+        })
+        
+        -- Misc Tab
+        local MiscGroup = GameTabs.Misc:AddLeftGroupbox('Misc Options')
+        MiscGroup:AddLabel('Misc features coming soon...')
+        
+        -- Main Tab
+        local MainGroup = GameTabs.Main:AddLeftGroupbox('Main Settings')
+        MainGroup:AddLabel('Main features coming soon...')
+
+    -- ============================================
+    -- ARSENAL
+    -- ============================================
+    elseif gameName == 'Arsenal' then
+        GameTabs.Rage = GameWindow:AddTab('Rage')
+        GameTabs.Legit = GameWindow:AddTab('Legit')
+        GameTabs.Visuals = GameWindow:AddTab('Visuals')
+        GameTabs.Misc = GameWindow:AddTab('Misc')
+        GameTabs.Settings = GameWindow:AddTab('Settings')
+        
+        -- Rage Tab
+        local RageGroup = GameTabs.Rage:AddLeftGroupbox('Aimbot')
+        RageGroup:AddLabel('Rage aimbot features coming soon...')
+        
+        -- Legit Tab
+        local CamlockGroup = GameTabs.Legit:AddLeftGroupbox('Camlock')
+        
+        CamlockGroup:AddToggle('CamlockEnabled', {
+            Text = 'Enable Camlock',
+            Default = false,
+            Tooltip = 'Smoothly locks camera to target'
+        })
+        
+        CamlockGroup:AddLabel('Keybind'):AddKeyPicker('CamlockKey', {
+            Default = 'Q',
+            SyncToggleState = false,
+            Mode = 'Hold',
+            Text = 'Camlock Key',
+            NoUI = false,
+        })
+        
+        CamlockGroup:AddSlider('CamlockSmoothing', {
+            Text = 'Smoothing',
+            Min = 0.1,
+            Max = 1,
+            Default = 0.3,
+            Rounding = 2,
+            Compact = false,
+            Tooltip = 'Camera smoothness (lower = smoother)'
+        })
+        
+        CamlockGroup:AddDropdown('CamlockPart', {
+            Values = {'Head', 'Torso', 'HumanoidRootPart'},
+            Default = 1,
+            Multi = false,
+            Text = 'Target Part',
+        })
+        
+        CamlockGroup:AddDivider()
+        
+        CamlockGroup:AddToggle('CamlockKOCheck', {
+            Text = 'KO Check',
+            Default = true,
+            Tooltip = 'Don\'t target knocked players'
+        })
+        
+        CamlockGroup:AddToggle('CamlockWallCheck', {
+            Text = 'Wall Check',
+            Default = false,
+            Tooltip = 'Don\'t target through walls'
+        })
+        
+        CamlockGroup:AddToggle('CamlockForceFieldCheck', {
+            Text = 'Force Field Check',
+            Default = true,
+            Tooltip = 'Don\'t target players with force fields'
+        })
+        
+        -- Silent Aim
+        local SilentGroup = GameTabs.Legit:AddRightGroupbox('Silent Aim')
+        
+        SilentGroup:AddToggle('SilentEnabled', {
+            Text = 'Enable Silent Aim',
+            Default = false,
+            Tooltip = 'Bullets hit target without moving camera'
+        })
+        
+        SilentGroup:AddLabel('Keybind'):AddKeyPicker('SilentKey', {
+            Default = 'C',
+            SyncToggleState = false,
+            Mode = 'Hold',
+            Text = 'Silent Aim Key',
+            NoUI = false,
+        })
+        
+        SilentGroup:AddSlider('SilentHitchance', {
+            Text = 'Hit Chance',
+            Min = 0,
+            Max = 100,
+            Default = 100,
+            Rounding = 0,
+            Suffix = '%',
+            Compact = false,
+            Tooltip = 'Chance to hit target'
+        })
+        
+        SilentGroup:AddDropdown('SilentPart', {
+            Values = {'Head', 'Torso', 'HumanoidRootPart'},
+            Default = 1,
+            Multi = false,
+            Text = 'Target Part',
+        })
+        
+        SilentGroup:AddDivider()
+        
+        SilentGroup:AddToggle('SilentKOCheck', {
+            Text = 'KO Check',
+            Default = true,
+            Tooltip = 'Don\'t target knocked players'
+        })
+        
+        SilentGroup:AddToggle('SilentWallCheck', {
+            Text = 'Wall Check',
+            Default = false,
+            Tooltip = 'Don\'t target through walls'
+        })
+        
+        SilentGroup:AddToggle('SilentForceFieldCheck', {
+            Text = 'Force Field Check',
+            Default = true,
+            Tooltip = 'Don\'t target players with force fields'
+        })
+        
+        -- Triggerbot
+        local TriggerGroup = GameTabs.Legit:AddLeftGroupbox('Triggerbot')
+        
+        TriggerGroup:AddToggle('TriggerEnabled', {
+            Text = 'Enable Triggerbot',
+            Default = false,
+            Tooltip = 'Automatically shoots when aiming at enemy'
+        })
+        
+        TriggerGroup:AddLabel('Keybind'):AddKeyPicker('TriggerKey', {
+            Default = 'V',
+            SyncToggleState = false,
+            Mode = 'Hold',
+            Text = 'Trigger Key',
+            NoUI = false,
+        })
+        
+        TriggerGroup:AddSlider('TriggerDelay', {
+            Text = 'Delay',
+            Min = 0,
+            Max = 500,
+            Default = 50,
+            Rounding = 0,
+            Suffix = 'ms',
+            Compact = false,
+            Tooltip = 'Delay before shooting'
+        })
+        
+        TriggerGroup:AddDivider()
+        
+        TriggerGroup:AddToggle('TriggerKOCheck', {
+            Text = 'KO Check',
+            Default = true,
+            Tooltip = 'Don\'t shoot knocked players'
+        })
+        
+        TriggerGroup:AddToggle('TriggerForceFieldCheck', {
+            Text = 'Force Field Check',
+            Default = true,
+            Tooltip = 'Don\'t shoot players with force fields'
+        })
+        
+        -- Prediction (Arsenal specific)
+        local PredictionGroup = GameTabs.Legit:AddRightGroupbox('Prediction')
+        
+        PredictionGroup:AddToggle('PredictionEnabled', {
+            Text = 'Enable Prediction',
+            Default = false,
+            Tooltip = 'Predicts player movement'
+        })
+        
+        PredictionGroup:AddSlider('PredictionAmount', {
+            Text = 'Prediction',
+            Min = 0,
+            Max = 0.5,
+            Default = 0.165,
+            Rounding = 3,
+            Compact = false,
+            Tooltip = 'Prediction multiplier'
+        })
+        
+        PredictionGroup:AddToggle('AutoPrediction', {
+            Text = 'Auto Prediction',
+            Default = false,
+            Tooltip = 'Automatically adjusts for ping'
+        })
+
+        -- Camlock System (Arsenal)
+        local camlockTarget = nil
+        local camlockConnection = nil
+        
+        local function GetClosestPlayerArsenal()
+            local closestPlayer = nil
+            local shortestDistance = math.huge
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local char = player.Character
+                    local targetPart = char:FindFirstChild(Options.CamlockPart and Options.CamlockPart.Value or "Head")
+                    
+                    if targetPart then
+                        if Toggles.CamlockKOCheck and Toggles.CamlockKOCheck.Value then
+                            local humanoid = char:FindFirstChild("Humanoid")
+                            if humanoid and humanoid.Health <= 0 then
+                                continue
+                            end
+                        end
+                        
+                        if Toggles.CamlockForceFieldCheck and Toggles.CamlockForceFieldCheck.Value then
+                            if char:FindFirstChildOfClass("ForceField") then
+                                continue
+                            end
+                        end
+                        
+                        if Toggles.CamlockWallCheck and Toggles.CamlockWallCheck.Value then
+                            local ray = Ray.new(workspace.CurrentCamera.CFrame.Position, (targetPart.Position - workspace.CurrentCamera.CFrame.Position).Unit * 500)
+                            local hit = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
+                            if hit and not hit:IsDescendantOf(char) then
+                                continue
+                            end
+                        end
+                        
+                        local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetPart.Position)
+                        if onScreen then
+                            local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+                            local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                            
+                            if distance < shortestDistance then
+                                shortestDistance = distance
+                                closestPlayer = player
+                            end
+                        end
+                    end
+                end
+            end
+            
+            return closestPlayer
+        end
+        
+        game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            if Options.CamlockKey and input.KeyCode == Options.CamlockKey.Value then
+                if Toggles.CamlockEnabled and Toggles.CamlockEnabled.Value then
+                    camlockTarget = GetClosestPlayerArsenal()
+                    
+                    if camlockTarget and not camlockConnection then
+                        camlockConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                            if not camlockTarget or not camlockTarget.Character then
+                                camlockTarget = nil
+                                return
+                            end
+                            
+                            local char = camlockTarget.Character
+                            local targetPart = char:FindFirstChild(Options.CamlockPart and Options.CamlockPart.Value or "Head")
+                            
+                            if not targetPart then
+                                camlockTarget = nil
+                                return
+                            end
+                            
+                            local targetPos = targetPart.Position
+                            
+                            if Toggles.PredictionEnabled and Toggles.PredictionEnabled.Value then
+                                local predAmount = Options.PredictionAmount and Options.PredictionAmount.Value or 0.165
+                                local velocity = targetPart.Velocity
+                                targetPos = targetPos + (velocity * predAmount)
+                            end
+                            
+                            local camera = workspace.CurrentCamera
+                            local smoothing = Options.CamlockSmoothing and Options.CamlockSmoothing.Value or 0.3
+                            
+                            camera.CFrame = camera.CFrame:Lerp(CFrame.new(camera.CFrame.Position, targetPos), smoothing)
+                        end)
+                    end
+                end
+            end
+        end)
+        
+        game:GetService("UserInputService").InputEnded:Connect(function(input)
+            if Options.CamlockKey and input.KeyCode == Options.CamlockKey.Value then
+                camlockTarget = nil
+                if camlockConnection then
+                    camlockConnection:Disconnect()
+                    camlockConnection = nil
+                end
+            end
+        end)
+        
+        -- Visuals Tab (Same as Da Hood)
+        local ESPGroup = GameTabs.Visuals:AddLeftGroupbox('ESP')
+        
+        ESPGroup:AddToggle('ESPEnabled', {
+            Text = 'Enable ESP',
+            Default = false,
+            Tooltip = 'Master toggle for ESP'
+        })
+        
+        ESPGroup:AddDivider()
+        
+        ESPGroup:AddToggle('BoxESP', {
+            Text = 'Box',
+            Default = false,
+            Tooltip = 'Draws boxes around players'
+        })
+        
+        ESPGroup:AddToggle('SkeletonESP', {
+            Text = 'Skeleton',
+            Default = false,
+            Tooltip = 'Draws player skeletons'
+        })
+        
+        ESPGroup:AddToggle('TracersESP', {
+            Text = 'Tracers',
+            Default = false,
+            Tooltip = 'Draws lines to players'
+        })
+        
+        ESPGroup:AddToggle('HeadDot', {
+            Text = 'Head Dot',
+            Default = false,
+            Tooltip = 'Draws a dot on player heads'
+        })
+        
+        ESPGroup:AddToggle('NameESP', {
+            Text = 'Name',
+            Default = false,
+            Tooltip = 'Shows player names'
+        })
+        
+        ESPGroup:AddToggle('DistanceESP', {
+            Text = 'Distance',
+            Default = false,
+            Tooltip = 'Shows distance to players'
+        })
+        
+        ESPGroup:AddToggle('HealthESP', {
+            Text = 'Health Bar',
+            Default = false,
+            Tooltip = 'Shows player health bars'
+        })
+        
+        ESPGroup:AddDivider()
+        
+        ESPGroup:AddLabel('ESP Color'):AddColorPicker('ESPColor', {
+            Default = Color3.fromRGB(255, 255, 255),
+            Title = 'ESP Color',
+            Transparency = 0,
+        })
+        
+        ESPGroup:AddToggle('TeamCheck', {
+            Text = 'Team Check',
+            Default = false,
+            Tooltip = 'Don\'t show ESP on teammates'
+        })
+
+        -- ESP System (Same as Da Hood)
+        local ESPObjects = {}
+        
+        local function CreateESP(player)
+            if player == LocalPlayer then return end
+            if ESPObjects[player] then return end
+            
+            local espData = {
+                drawings = {}
+            }
+            
+            -- Box ESP with borders
+            espData.drawings.box = {}
+            espData.drawings.boxBorder = {}
+            
+            for i = 1, 4 do
+                espData.drawings.box[i] = Drawing.new("Line")
+                espData.drawings.box[i].Thickness = 1
+                espData.drawings.box[i].Color = Color3.new(1, 1, 1)
+                espData.drawings.box[i].Visible = false
+                
+                espData.drawings.boxBorder[i] = Drawing.new("Line")
+                espData.drawings.boxBorder[i].Thickness = 3
+                espData.drawings.boxBorder[i].Color = Color3.new(0, 0, 0)
+                espData.drawings.boxBorder[i].Visible = false
+            end
+            
+            -- Skeleton
+            espData.drawings.skeleton = {}
+            espData.drawings.skeletonBorder = {}
+            for i = 1, 6 do
+                espData.drawings.skeleton[i] = Drawing.new("Line")
+                espData.drawings.skeleton[i].Thickness = 1
+                espData.drawings.skeleton[i].Color = Color3.new(1, 1, 1)
+                espData.drawings.skeleton[i].Visible = false
+                
+                espData.drawings.skeletonBorder[i] = Drawing.new("Line")
+                espData.drawings.skeletonBorder[i].Thickness = 3
+                espData.drawings.skeletonBorder[i].Color = Color3.new(0, 0, 0)
+                espData.drawings.skeletonBorder[i].Visible = false
+            end
+            
+            -- Tracer with border
+            espData.drawings.tracerBorder = Drawing.new("Line")
+            espData.drawings.tracerBorder.Thickness = 3
+            espData.drawings.tracerBorder.Color = Color3.new(0, 0, 0)
+            espData.drawings.tracerBorder.Visible = false
+            
+            espData.drawings.tracer = Drawing.new("Line")
+            espData.drawings.tracer.Thickness = 1
+            espData.drawings.tracer.Color = Color3.new(1, 1, 1)
+            espData.drawings.tracer.Visible = false
+            
+            -- Head Dot with border
+            espData.drawings.headDotBorder = Drawing.new("Circle")
+            espData.drawings.headDotBorder.Thickness = 3
+            espData.drawings.headDotBorder.Radius = 4
+            espData.drawings.headDotBorder.Color = Color3.new(0, 0, 0)
+            espData.drawings.headDotBorder.Filled = false
+            espData.drawings.headDotBorder.Visible = false
+            
+            espData.drawings.headDot = Drawing.new("Circle")
+            espData.drawings.headDot.Thickness = 1
+            espData.drawings.headDot.Radius = 4
+            espData.drawings.headDot.Color = Color3.new(1, 1, 1)
+            espData.drawings.headDot.Filled = false
+            espData.drawings.headDot.Visible = false
+            
+            -- Name Text
+            espData.drawings.name = Drawing.new("Text")
+            espData.drawings.name.Size = 13
+            espData.drawings.name.Center = true
+            espData.drawings.name.Outline = true
+            espData.drawings.name.Color = Color3.new(1, 1, 1)
+            espData.drawings.name.Visible = false
+            
+            -- Distance Text
+            espData.drawings.distance = Drawing.new("Text")
+            espData.drawings.distance.Size = 13
+            espData.drawings.distance.Center = true
+            espData.drawings.distance.Outline = true
+            espData.drawings.distance.Color = Color3.new(1, 1, 1)
+            espData.drawings.distance.Visible = false
+            
+            -- Health Bar with border
+            espData.drawings.healthBarBorder = Drawing.new("Square")
+            espData.drawings.healthBarBorder.Thickness = 1
+            espData.drawings.healthBarBorder.Filled = true
+            espData.drawings.healthBarBorder.Color = Color3.new(0, 0, 0)
+            espData.drawings.healthBarBorder.Visible = false
+            
+            espData.drawings.healthBar = Drawing.new("Square")
+            espData.drawings.healthBar.Thickness = 1
+            espData.drawings.healthBar.Filled = true
+            espData.drawings.healthBar.Color = Color3.new(0, 1, 0)
+            espData.drawings.healthBar.Visible = false
+            
+            ESPObjects[player] = espData
+        end
+        
+        local function RemoveESP(player)
+            if ESPObjects[player] then
+                for _, drawing in pairs(ESPObjects[player].drawings) do
+                    if type(drawing) == "table" then
+                        for _, line in pairs(drawing) do
+                            line:Remove()
+                        end
+                    else
+                        drawing:Remove()
+                    end
+                end
+                ESPObjects[player] = nil
+            end
+        end
+        
+        local function UpdateESP()
+            if not Toggles.ESPEnabled or not Toggles.ESPEnabled.Value then 
+                -- Hide all ESP when disabled
+                for player, espData in pairs(ESPObjects) do
+                    for _, drawing in pairs(espData.drawings) do
+                        if type(drawing) == "table" then
+                            for _, line in pairs(drawing) do
+                                line.Visible = false
+                            end
+                        else
+                            drawing.Visible = false
+                        end
+                    end
+                end
+                return 
+            end
+            
+            local camera = workspace.CurrentCamera
+            local screenSize = camera.ViewportSize
+            local espColor = Options.ESPColor and Options.ESPColor.Value or Color3.new(1, 1, 1)
+            
+            for player, espData in pairs(ESPObjects) do
+                pcall(function()
+                    local char = player.Character
+                    if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Humanoid") then
+                        for _, drawing in pairs(espData.drawings) do
+                            if type(drawing) == "table" then
+                                for _, line in pairs(drawing) do
+                                    line.Visible = false
+                                end
+                            else
+                                drawing.Visible = false
+                            end
+                        end
+                        return
+                    end
+                    
+                    local hrp = char.HumanoidRootPart
+                    local head = char:FindFirstChild("Head")
+                    local humanoid = char.Humanoid
+                    
+                    -- Team check
+                    if Toggles.TeamCheck and Toggles.TeamCheck.Value then
+                        if player.Team == LocalPlayer.Team then
+                            for _, drawing in pairs(espData.drawings) do
+                                if type(drawing) == "table" then
+                                    for _, line in pairs(drawing) do
+                                        line.Visible = false
+                                    end
+                                else
+                                    drawing.Visible = false
+                                end
+                            end
+                            return
+                        end
+                    end
+                    
+                    local rootPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+                    
+                    if not onScreen or rootPos.Z < 0 then
+                        -- Hide ESP when not on screen
+                        for _, drawing in pairs(espData.drawings) do
+                            if type(drawing) == "table" then
+                                for _, line in pairs(drawing) do
+                                    line.Visible = false
+                                end
+                            else
+                                drawing.Visible = false
+                            end
+                        end
+                        return
+                    end
+                    
+                    local headPos = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                    local legPos = camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                    
+                    local boxHeight = math.abs(headPos.Y - legPos.Y)
+                    local boxWidth = boxHeight / 2.5
+                    
+                    local topLeft = Vector2.new(rootPos.X - boxWidth / 2, headPos.Y)
+                    local topRight = Vector2.new(rootPos.X + boxWidth / 2, headPos.Y)
+                    local bottomLeft = Vector2.new(rootPos.X - boxWidth / 2, legPos.Y)
+                    local bottomRight = Vector2.new(rootPos.X + boxWidth / 2, legPos.Y)
+                    
+                    -- Box ESP with border
+                    if Toggles.BoxESP and Toggles.BoxESP.Value then
+                        local boxLines = {
+                            {topLeft, topRight},
+                            {topRight, bottomRight},
+                            {bottomRight, bottomLeft},
+                            {bottomLeft, topLeft}
+                        }
+                        
+                        for i, line in ipairs(boxLines) do
+                            espData.drawings.boxBorder[i].From = line[1]
+                            espData.drawings.boxBorder[i].To = line[2]
+                            espData.drawings.boxBorder[i].Visible = true
+                            
+                            espData.drawings.box[i].From = line[1]
+                            espData.drawings.box[i].To = line[2]
+                            espData.drawings.box[i].Color = espColor
+                            espData.drawings.box[i].Visible = true
+                        end
+                    else
+                        for i = 1, 4 do
+                            espData.drawings.box[i].Visible = false
+                            espData.drawings.boxBorder[i].Visible = false
+                        end
+                    end
+                    
+                    -- Skeleton ESP
+                    if Toggles.SkeletonESP and Toggles.SkeletonESP.Value then
+                        local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+                        local leftArm = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm")
+                        local rightArm = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm")
+                        local leftLeg = char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftUpperLeg")
+                        local rightLeg = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightUpperLeg")
+                        
+                        if torso and leftArm and rightArm and leftLeg and rightLeg then
+                            local joints = {
+                                {head.Position, torso.Position},
+                                {torso.Position, leftArm.Position},
+                                {torso.Position, rightArm.Position},
+                                {torso.Position, leftLeg.Position},
+                                {torso.Position, rightLeg.Position},
+                            }
+                            
+                            for i, joint in ipairs(joints) do
+                                local p1 = camera:WorldToViewportPoint(joint[1])
+                                local p2 = camera:WorldToViewportPoint(joint[2])
+                                
+                                espData.drawings.skeletonBorder[i].From = Vector2.new(p1.X, p1.Y)
+                                espData.drawings.skeletonBorder[i].To = Vector2.new(p2.X, p2.Y)
+                                espData.drawings.skeletonBorder[i].Visible = true
+                                
+                                espData.drawings.skeleton[i].From = Vector2.new(p1.X, p1.Y)
+                                espData.drawings.skeleton[i].To = Vector2.new(p2.X, p2.Y)
+                                espData.drawings.skeleton[i].Color = espColor
+                                espData.drawings.skeleton[i].Visible = true
+                            end
+                        end
+                    else
+                        for i = 1, 6 do
+                            espData.drawings.skeleton[i].Visible = false
+                            espData.drawings.skeletonBorder[i].Visible = false
+                        end
+                    end
+                    
+                    -- Tracers
+                    if Toggles.TracersESP and Toggles.TracersESP.Value then
+                        espData.drawings.tracerBorder.From = Vector2.new(screenSize.X / 2, screenSize.Y)
+                        espData.drawings.tracerBorder.To = Vector2.new(rootPos.X, rootPos.Y)
+                        espData.drawings.tracerBorder.Visible = true
+                        
+                        espData.drawings.tracer.From = Vector2.new(screenSize.X / 2, screenSize.Y)
+                        espData.drawings.tracer.To = Vector2.new(rootPos.X, rootPos.Y)
+                        espData.drawings.tracer.Color = espColor
+                        espData.drawings.tracer.Visible = true
+                    else
+                        espData.drawings.tracer.Visible = false
+                        espData.drawings.tracerBorder.Visible = false
+                    end
+                    
+                    -- Head Dot
+                    if Toggles.HeadDot and Toggles.HeadDot.Value and head then
+                        local headScreenPos = camera:WorldToViewportPoint(head.Position)
+                        espData.drawings.headDotBorder.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
+                        espData.drawings.headDotBorder.Visible = true
+                        
+                        espData.drawings.headDot.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
+                        espData.drawings.headDot.Color = espColor
+                        espData.drawings.headDot.Visible = true
+                    else
+                        espData.drawings.headDot.Visible = false
+                        espData.drawings.headDotBorder.Visible = false
+                    end
+                    
+                    -- Name (positioned above box)
+                    if Toggles.NameESP and Toggles.NameESP.Value then
+                        espData.drawings.name.Text = player.Name
+                        espData.drawings.name.Position = Vector2.new(rootPos.X, topLeft.Y - 15)
+                        espData.drawings.name.Color = espColor
+                        espData.drawings.name.Visible = true
+                    else
+                        espData.drawings.name.Visible = false
+                    end
+                    
+                    -- Distance (positioned below box)
+                    if Toggles.DistanceESP and Toggles.DistanceESP.Value then
+                        local distance = (camera.CFrame.Position - hrp.Position).Magnitude
+                        espData.drawings.distance.Text = math.floor(distance) .. " studs"
+                        espData.drawings.distance.Position = Vector2.new(rootPos.X, bottomLeft.Y + 3)
+                        espData.drawings.distance.Color = espColor
+                        espData.drawings.distance.Visible = true
+                    else
+                        espData.drawings.distance.Visible = false
+                    end
+                    
+                    -- Health Bar
+                    if Toggles.HealthESP and Toggles.HealthESP.Value then
+                        local healthPercent = humanoid.Health / humanoid.MaxHealth
+                        
+                        espData.drawings.healthBarBorder.Size = Vector2.new(4, boxHeight + 2)
+                        espData.drawings.healthBarBorder.Position = Vector2.new(topLeft.X - 7, topLeft.Y - 1)
+                        espData.drawings.healthBarBorder.Visible = true
+                        
+                        espData.drawings.healthBar.Size = Vector2.new(2, boxHeight * healthPercent)
+                        espData.drawings.healthBar.Position = Vector2.new(topLeft.X - 6, topLeft.Y + (boxHeight * (1 - healthPercent)))
+                        espData.drawings.healthBar.Color = Color3.new(1 - healthPercent, healthPercent, 0)
+                        espData.drawings.healthBar.Visible = true
+                    else
+                        espData.drawings.healthBarBorder.Visible = false
+                        espData.drawings.healthBar.Visible = false
+                    end
+                end)
+            end
+        end
+        
+        -- Setup ESP
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                CreateESP(player)
+            end
+        end
+        
+        Players.PlayerAdded:Connect(function(player)
+            task.wait(1)
+            CreateESP(player)
+        end)
+        
+        Players.PlayerRemoving:Connect(function(player)
+            RemoveESP(player)
+        end)
+        
+        game:GetService("RunService").RenderStepped:Connect(function()
+            UpdateESP()
+        end)
+        
+        -- Self ESP & Effects
+        local SelfGroup = GameTabs.Visuals:AddRightGroupbox('Self ESP')
+        
+        SelfGroup:AddToggle('Chams', {
+            Text = 'Chams',
+            Default = false,
+            Tooltip = 'Highlights your character'
+        })
+        
+        SelfGroup:AddLabel('Chams Color'):AddColorPicker('ChamsColor', {
+            Default = Color3.fromRGB(0, 255, 255),
+            Title = 'Chams Color',
+            Transparency = 0.3,
+        })
+        
+        SelfGroup:AddDivider()
+        
+        SelfGroup:AddToggle('AmbientColor', {
+            Text = 'Ambient Color',
+            Default = false,
+            Tooltip = 'Changes world ambient lighting'
+        })
+        
+        SelfGroup:AddLabel('Ambient'):AddColorPicker('AmbientPicker', {
+            Default = Color3.fromRGB(128, 128, 128),
+            Title = 'Ambient Color',
+            Transparency = 0,
+        })
+        
+        -- Bullet Tracers
+        local TracerGroup = GameTabs.Visuals:AddLeftGroupbox('Bullet Tracers')
+        
+        TracerGroup:AddToggle('BulletTracers', {
+            Text = 'Enable Tracers',
+            Default = false,
+            Tooltip = 'Shows bullet trajectories'
+        })
+        
+        TracerGroup:AddLabel('Tracer Color'):AddColorPicker('TracerColor', {
+            Default = Color3.fromRGB(255, 0, 0),
+            Title = 'Tracer Color',
+            Transparency = 0,
+        })
+        
+        TracerGroup:AddSlider('TracerDuration', {
+            Text = 'Duration',
+            Min = 0.5,
+            Max = 5,
+            Default = 2,
+            Rounding = 1,
+            Suffix = 's',
+            Compact = false,
+            Tooltip = 'How long tracers stay visible'
+        })
+        
+        TracerGroup:AddSlider('TracerWidth', {
+            Text = 'Width',
+            Min = 0.1,
+            Max = 1,
+            Default = 0.3,
+            Rounding = 2,
+            Compact = false,
+            Tooltip = 'Tracer line thickness'
+        })
+        
+        -- Misc Tab
+        local MiscGroup = GameTabs.Misc:AddLeftGroupbox('Misc Options')
+        MiscGroup:AddLabel('Misc features coming soon...')
+
+    -- ============================================
+    -- RIVALS
+    -- ============================================
+    elseif gameName == 'Rivals' then
+        GameTabs.Rage = GameWindow:AddTab('Rage')
+        GameTabs.Legit = GameWindow:AddTab('Legit')
+        GameTabs.Player = GameWindow:AddTab('Player')
+        GameTabs.Visuals = GameWindow:AddTab('Visuals')
+        GameTabs.Misc = GameWindow:AddTab('Misc')
+        GameTabs.Main = GameWindow:AddTab('Main')
+        GameTabs.Settings = GameWindow:AddTab('Settings')
+        
+        -- Rage Tab
+        local RageGroup = GameTabs.Rage:AddLeftGroupbox('Aimbot')
+        RageGroup:AddLabel('Aimbot features coming soon...')
+        
+        -- Legit Tab
+        local CamlockGroup = GameTabs.Legit:AddLeftGroupbox('Camlock')
+        
+        CamlockGroup:AddToggle('CamlockEnabled', {
+            Text = 'Enable Camlock',
+            Default = false,
+            Tooltip = 'Smoothly locks camera to target'
+        })
+        
+        CamlockGroup:AddLabel('Keybind'):AddKeyPicker('CamlockKey', {
+            Default = 'Q',
+            SyncToggleState = false,
+            Mode = 'Hold',
+            Text = 'Camlock Key',
+            NoUI = false,
+        })
+        
+        CamlockGroup:AddSlider('CamlockSmoothing', {
+            Text = 'Smoothing',
+            Min = 0.1,
+            Max = 1,
+            Default = 0.3,
+            Rounding = 2,
+            Compact = false,
+            Tooltip = 'Camera smoothness (lower = smoother)'
+        })
+        
+        CamlockGroup:AddDropdown('CamlockPart', {
+            Values = {'Head', 'Torso', 'HumanoidRootPart'},
+            Default = 1,
+            Multi = false,
+            Text = 'Target Part',
+        })
+        
+        CamlockGroup:AddDivider()
+        
+        CamlockGroup:AddToggle('CamlockKOCheck', {
+            Text = 'KO Check',
+            Default = true,
+            Tooltip = 'Don\'t target knocked players'
+        })
+        
+        CamlockGroup:AddToggle('CamlockWallCheck', {
+            Text = 'Wall Check',
+            Default = false,
+            Tooltip = 'Don\'t target through walls'
+        })
+        
+        CamlockGroup:AddToggle('CamlockForceFieldCheck', {
+            Text = 'Force Field Check',
+            Default = true,
+            Tooltip = 'Don\'t target players with force fields'
+        })
+        
+        -- Silent Aim
+        local SilentGroup = GameTabs.Legit:AddRightGroupbox('Silent Aim')
+        
+        SilentGroup:AddToggle('SilentEnabled', {
+            Text = 'Enable Silent Aim',
+            Default = false,
+            Tooltip = 'Bullets hit target without moving camera'
+        })
+        
+        SilentGroup:AddLabel('Keybind'):AddKeyPicker('SilentKey', {
+            Default = 'C',
+            SyncToggleState = false,
+            Mode = 'Hold',
+            Text = 'Silent Aim Key',
+            NoUI = false,
+        })
+        
+        SilentGroup:AddSlider('SilentHitchance', {
+            Text = 'Hit Chance',
+            Min = 0,
+            Max = 100,
+            Default = 100,
+            Rounding = 0,
+            Suffix = '%',
+            Compact = false,
+            Tooltip = 'Chance to hit target'
+        })
+        
+        SilentGroup:AddDropdown('SilentPart', {
+            Values = {'Head', 'Torso', 'HumanoidRootPart'},
+            Default = 1,
+            Multi = false,
+            Text = 'Target Part',
+        })
+        
+        SilentGroup:AddDivider()
+        
+        SilentGroup:AddToggle('SilentKOCheck', {
+            Text = 'KO Check',
+            Default = true,
+            Tooltip = 'Don\'t target knocked players'
+        })
+        
+        SilentGroup:AddToggle('SilentWallCheck', {
+            Text = 'Wall Check',
+            Default = false,
+            Tooltip = 'Don\'t target through walls'
+        })
+        
+        SilentGroup:AddToggle('SilentForceFieldCheck', {
+            Text = 'Force Field Check',
+            Default = true,
+            Tooltip = 'Don\'t target players with force fields'
+        })
+        
+        -- Triggerbot
+        local TriggerGroup = GameTabs.Legit:AddLeftGroupbox('Triggerbot')
+        
+        TriggerGroup:AddToggle('TriggerEnabled', {
+            Text = 'Enable Triggerbot',
+            Default = false,
+            Tooltip = 'Automatically shoots when aiming at enemy'
+        })
+        
+        TriggerGroup:AddLabel('Keybind'):AddKeyPicker('TriggerKey', {
+            Default = 'V',
+            SyncToggleState = false,
+            Mode = 'Hold',
+            Text = 'Trigger Key',
+            NoUI = false,
+        })
+        
+        TriggerGroup:AddSlider('TriggerDelay', {
+            Text = 'Delay',
+            Min = 0,
+            Max = 500,
+            Default = 50,
+            Rounding = 0,
+            Suffix = 'ms',
+            Compact = false,
+            Tooltip = 'Delay before shooting'
+        })
+        
+        TriggerGroup:AddDivider()
+        
+        TriggerGroup:AddToggle('TriggerKOCheck', {
+            Text = 'KO Check',
+            Default = true,
+            Tooltip = 'Don\'t shoot knocked players'
+        })
+        
+        TriggerGroup:AddToggle('TriggerForceFieldCheck', {
+            Text = 'Force Field Check',
+            Default = true,
+            Tooltip = 'Don\'t shoot players with force fields'
+        })
+        
+        -- Prediction
+        local PredictionGroup = GameTabs.Legit:AddRightGroupbox('Prediction')
+        
+        PredictionGroup:AddToggle('PredictionEnabled', {
+            Text = 'Enable Prediction',
+            Default = false,
+            Tooltip = 'Predicts player movement'
+        })
+        
+        PredictionGroup:AddSlider('PredictionAmount', {
+            Text = 'Prediction',
+            Min = 0,
+            Max = 0.5,
+            Default = 0.165,
+            Rounding = 3,
+            Compact = false,
+            Tooltip = 'Prediction multiplier'
+        })
+        
+        PredictionGroup:AddToggle('AutoPrediction', {
+            Text = 'Auto Prediction',
+            Default = false,
+            Tooltip = 'Automatically adjusts for ping'
+        })
+
+        -- Camlock System
+        local camlockTarget = nil
+        local camlockConnection = nil
+        
+        local function GetClosestPlayer()
+            local closestPlayer = nil
+            local shortestDistance = math.huge
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local char = player.Character
+                    local targetPart = char:FindFirstChild(Options.CamlockPart and Options.CamlockPart.Value or "Head")
+                    
+                    if targetPart then
+                        -- KO Check
+                        if Toggles.CamlockKOCheck and Toggles.CamlockKOCheck.Value then
+                            local humanoid = char:FindFirstChild("Humanoid")
+                            if humanoid and humanoid.Health <= 0 then
+                                continue
+                            end
+                        end
+                        
+                        -- Force Field Check
+                        if Toggles.CamlockForceFieldCheck and Toggles.CamlockForceFieldCheck.Value then
+                            if char:FindFirstChildOfClass("ForceField") then
+                                continue
+                            end
+                        end
+                        
+                        -- Wall Check
+                        if Toggles.CamlockWallCheck and Toggles.CamlockWallCheck.Value then
+                            local ray = Ray.new(workspace.CurrentCamera.CFrame.Position, (targetPart.Position - workspace.CurrentCamera.CFrame.Position).Unit * 500)
+                            local hit = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
+                            if hit and not hit:IsDescendantOf(char) then
+                                continue
+                            end
+                        end
+                        
+                        local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetPart.Position)
+                        if onScreen then
+                            local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+                            local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                            
+                            if distance < shortestDistance then
+                                shortestDistance = distance
+                                closestPlayer = player
+                            end
+                        end
+                    end
+                end
+            end
+            
+            return closestPlayer
+        end
+        
+        game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            if Options.CamlockKey and input.KeyCode == Options.CamlockKey.Value then
+                if Toggles.CamlockEnabled and Toggles.CamlockEnabled.Value then
+                    camlockTarget = GetClosestPlayer()
+                    
+                    if camlockTarget and not camlockConnection then
+                        camlockConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                            if not camlockTarget or not camlockTarget.Character then
+                                camlockTarget = nil
+                                return
+                            end
+                            
+                            local char = camlockTarget.Character
+                            local targetPart = char:FindFirstChild(Options.CamlockPart and Options.CamlockPart.Value or "Head")
+                            
+                            if not targetPart then
+                                camlockTarget = nil
+                                return
+                            end
+                            
+                            local targetPos = targetPart.Position
+                            
+                            -- Apply prediction
+                            if Toggles.PredictionEnabled and Toggles.PredictionEnabled.Value then
+                                local predAmount = Options.PredictionAmount and Options.PredictionAmount.Value or 0.165
+                                local velocity = targetPart.Velocity
+                                targetPos = targetPos + (velocity * predAmount)
+                            end
+                            
+                            local camera = workspace.CurrentCamera
+                            local smoothing = Options.CamlockSmoothing and Options.CamlockSmoothing.Value or 0.3
+                            
+                            camera.CFrame = camera.CFrame:Lerp(CFrame.new(camera.CFrame.Position, targetPos), smoothing)
+                        end)
+                    end
+                end
+            end
+        end)
+        
+        game:GetService("UserInputService").InputEnded:Connect(function(input)
+            if Options.CamlockKey and input.KeyCode == Options.CamlockKey.Value then
+                camlockTarget = nil
+                if camlockConnection then
+                    camlockConnection:Disconnect()
+                    camlockConnection = nil
+                end
+            end
+        end)
+        
+        -- Player Tab
+        local PlayerGroup = GameTabs.Player:AddLeftGroupbox('Character')
+        PlayerGroup:AddLabel('Character features coming soon...')
+        
+        -- Visuals Tab
+        local ESPGroup = GameTabs.Visuals:AddLeftGroupbox('ESP')
+        
+        ESPGroup:AddToggle('ESPEnabled', {
+            Text = 'Enable ESP',
+            Default = false,
+            Tooltip = 'Master toggle for ESP'
+        })
+        
+        ESPGroup:AddDivider()
+        
+        ESPGroup:AddToggle('BoxESP', {
+            Text = 'Box',
+            Default = false,
+            Tooltip = 'Draws boxes around players'
+        })
+        
+        ESPGroup:AddToggle('SkeletonESP', {
+            Text = 'Skeleton',
+            Default = false,
+            Tooltip = 'Draws player skeletons'
+        })
+        
+        ESPGroup:AddToggle('TracersESP', {
+            Text = 'Tracers',
+            Default = false,
+            Tooltip = 'Draws lines to players'
+        })
+        
+        ESPGroup:AddToggle('HeadDot', {
+            Text = 'Head Dot',
+            Default = false,
+            Tooltip = 'Draws a dot on player heads'
+        })
+        
+        ESPGroup:AddToggle('NameESP', {
+            Text = 'Name',
+            Default = false,
+            Tooltip = 'Shows player names'
+        })
+        
+        ESPGroup:AddToggle('DistanceESP', {
+            Text = 'Distance',
+            Default = false,
+            Tooltip = 'Shows distance to players'
+        })
+        
+        ESPGroup:AddToggle('HealthESP', {
+            Text = 'Health Bar',
+            Default = false,
+            Tooltip = 'Shows player health bars'
+        })
+        
+        ESPGroup:AddDivider()
+        
+        ESPGroup:AddLabel('ESP Color'):AddColorPicker('ESPColor', {
+            Default = Color3.fromRGB(255, 255, 255),
+            Title = 'ESP Color',
+            Transparency = 0,
+        })
+        
+        ESPGroup:AddToggle('TeamCheck', {
+            Text = 'Team Check',
+            Default = false,
+            Tooltip = 'Don\'t show ESP on teammates'
+        })
+
+        -- ESP System (Same as Arsenal/Da Hood)
+        local ESPObjects = {}
+        
+        local function CreateESP(player)
+            if player == LocalPlayer then return end
+            if ESPObjects[player] then return end
+            
+            local espData = {
+                drawings = {}
+            }
+            
+            -- Box ESP with borders
+            espData.drawings.box = {}
+            espData.drawings.boxBorder = {}
+            
+            for i = 1, 4 do
+                espData.drawings.box[i] = Drawing.new("Line")
+                espData.drawings.box[i].Thickness = 1
+                espData.drawings.box[i].Color = Color3.new(1, 1, 1)
+                espData.drawings.box[i].Visible = false
+                
+                espData.drawings.boxBorder[i] = Drawing.new("Line")
+                espData.drawings.boxBorder[i].Thickness = 3
+                espData.drawings.boxBorder[i].Color = Color3.new(0, 0, 0)
+                espData.drawings.boxBorder[i].Visible = false
+            end
+            
+            -- Skeleton
+            espData.drawings.skeleton = {}
+            espData.drawings.skeletonBorder = {}
+            for i = 1, 6 do
+                espData.drawings.skeleton[i] = Drawing.new("Line")
+                espData.drawings.skeleton[i].Thickness = 1
+                espData.drawings.skeleton[i].Color = Color3.new(1, 1, 1)
+                espData.drawings.skeleton[i].Visible = false
+                
+                espData.drawings.skeletonBorder[i] = Drawing.new("Line")
+                espData.drawings.skeletonBorder[i].Thickness = 3
+                espData.drawings.skeletonBorder[i].Color = Color3.new(0, 0, 0)
+                espData.drawings.skeletonBorder[i].Visible = false
+            end
+            
+            -- Tracer with border
+            espData.drawings.tracerBorder = Drawing.new("Line")
+            espData.drawings.tracerBorder.Thickness = 3
+            espData.drawings.tracerBorder.Color = Color3.new(0, 0, 0)
+            espData.drawings.tracerBorder.Visible = false
+            
+            espData.drawings.tracer = Drawing.new("Line")
+            espData.drawings.tracer.Thickness = 1
+            espData.drawings.tracer.Color = Color3.new(1, 1, 1)
+            espData.drawings.tracer.Visible = false
+            
+            -- Head Dot with border
+            espData.drawings.headDotBorder = Drawing.new("Circle")
+            espData.drawings.headDotBorder.Thickness = 3
+            espData.drawings.headDotBorder.Radius = 4
+            espData.drawings.headDotBorder.Color = Color3.new(0, 0, 0)
+            espData.drawings.headDotBorder.Filled = false
+            espData.drawings.headDotBorder.Visible = false
+            
+            espData.drawings.headDot = Drawing.new("Circle")
+            espData.drawings.headDot.Thickness = 1
+            espData.drawings.headDot.Radius = 4
+            espData.drawings.headDot.Color = Color3.new(1, 1, 1)
+            espData.drawings.headDot.Filled = false
+            espData.drawings.headDot.Visible = false
+            
+            -- Name Text
+            espData.drawings.name = Drawing.new("Text")
+            espData.drawings.name.Size = 13
+            espData.drawings.name.Center = true
+            espData.drawings.name.Outline = true
+            espData.drawings.name.Color = Color3.new(1, 1, 1)
+            espData.drawings.name.Visible = false
+            
+            -- Distance Text
+            espData.drawings.distance = Drawing.new("Text")
+            espData.drawings.distance.Size = 13
+            espData.drawings.distance.Center = true
+            espData.drawings.distance.Outline = true
+            espData.drawings.distance.Color = Color3.new(1, 1, 1)
+            espData.drawings.distance.Visible = false
+            
+            -- Health Bar with border
+            espData.drawings.healthBarBorder = Drawing.new("Square")
+            espData.drawings.healthBarBorder.Thickness = 1
+            espData.drawings.healthBarBorder.Filled = true
+            espData.drawings.healthBarBorder.Color = Color3.new(0, 0, 0)
+            espData.drawings.healthBarBorder.Visible = false
+            
+            espData.drawings.healthBar = Drawing.new("Square")
+            espData.drawings.healthBar.Thickness = 1
+            espData.drawings.healthBar.Filled = true
+            espData.drawings.healthBar.Color = Color3.new(0, 1, 0)
+            espData.drawings.healthBar.Visible = false
+            
+            ESPObjects[player] = espData
+        end
+        
+        local function RemoveESP(player)
+            if ESPObjects[player] then
+                for _, drawing in pairs(ESPObjects[player].drawings) do
+                    if type(drawing) == "table" then
+                        for _, line in pairs(drawing) do
+                            line:Remove()
+                        end
+                    else
+                        drawing:Remove()
+                    end
+                end
+                ESPObjects[player] = nil
+            end
+        end
+        
+        local function UpdateESP()
+            if not Toggles.ESPEnabled or not Toggles.ESPEnabled.Value then 
+                for _, espData in pairs(ESPObjects) do
+                    for _, drawing in pairs(espData.drawings) do
+                        if type(drawing) == "table" then
+                            for _, line in pairs(drawing) do
+                                pcall(function() line.Visible = false end)
+                            end
+                        else
+                            pcall(function() drawing.Visible = false end)
+                        end
+                    end
+                end
+                return 
+            end
+            
+            local camera = workspace.CurrentCamera
+            local screenSize = camera.ViewportSize
+            local espColor = Options.ESPColor and Options.ESPColor.Value or Color3.new(1, 1, 1)
+            
+            for player, espData in pairs(ESPObjects) do
+                local success = pcall(function()
+                    local char = player.Character
+                    if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Humanoid") then
+                        for _, drawing in pairs(espData.drawings) do
+                            if type(drawing) == "table" then
+                                for _, line in pairs(drawing) do
+                                    line.Visible = false
+                                end
+                            else
+                                drawing.Visible = false
+                            end
+                        end
+                        return
+                    end
+                    
+                    local hrp = char.HumanoidRootPart
+                    local head = char:FindFirstChild("Head")
+                    local humanoid = char.Humanoid
+                    
+                    if Toggles.TeamCheck and Toggles.TeamCheck.Value then
+                        if player.Team == LocalPlayer.Team then
+                            for _, drawing in pairs(espData.drawings) do
+                                if type(drawing) == "table" then
+                                    for _, line in pairs(drawing) do
+                                        line.Visible = false
+                                    end
+                                else
+                                    drawing.Visible = false
+                                end
+                            end
+                            return
+                        end
+                    end
+                    
+                    local rootPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+                    
+                    if not onScreen or rootPos.Z < 0 then
+                        for _, drawing in pairs(espData.drawings) do
+                            if type(drawing) == "table" then
+                                for _, line in pairs(drawing) do
+                                    line.Visible = false
+                                end
+                            else
+                                drawing.Visible = false
+                            end
+                        end
+                        return
+                    end
+                    
+                    local headPos = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                    local legPos = camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                    
+                    local boxHeight = math.abs(headPos.Y - legPos.Y)
+                    local boxWidth = boxHeight / 2.5
+                    
+                    local topLeft = Vector2.new(rootPos.X - boxWidth / 2, headPos.Y)
+                    local topRight = Vector2.new(rootPos.X + boxWidth / 2, headPos.Y)
+                    local bottomLeft = Vector2.new(rootPos.X - boxWidth / 2, legPos.Y)
+                    local bottomRight = Vector2.new(rootPos.X + boxWidth / 2, legPos.Y)
+                    
+                    if Toggles.BoxESP and Toggles.BoxESP.Value then
+                        local boxLines = {
+                            {topLeft, topRight},
+                            {topRight, bottomRight},
+                            {bottomRight, bottomLeft},
+                            {bottomLeft, topLeft}
+                        }
+                        
+                        for i, line in ipairs(boxLines) do
+                            espData.drawings.boxBorder[i].From = line[1]
+                            espData.drawings.boxBorder[i].To = line[2]
+                            espData.drawings.boxBorder[i].Visible = true
+                            
+                            espData.drawings.box[i].From = line[1]
+                            espData.drawings.box[i].To = line[2]
+                            espData.drawings.box[i].Color = espColor
+                            espData.drawings.box[i].Visible = true
+                        end
+                    else
+                        for i = 1, 4 do
+                            espData.drawings.box[i].Visible = false
+                            espData.drawings.boxBorder[i].Visible = false
+                        end
+                    end
+                    
+                    if Toggles.SkeletonESP and Toggles.SkeletonESP.Value then
+                        local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+                        local leftArm = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm")
+                        local rightArm = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm")
+                        local leftLeg = char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftUpperLeg")
+                        local rightLeg = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightUpperLeg")
+                        
+                        if torso and leftArm and rightArm and leftLeg and rightLeg then
+                            local joints = {
+                                {head.Position, torso.Position},
+                                {torso.Position, leftArm.Position},
+                                {torso.Position, rightArm.Position},
+                                {torso.Position, leftLeg.Position},
+                                {torso.Position, rightLeg.Position},
+                            }
+                            
+                            for i, joint in ipairs(joints) do
+                                local p1 = camera:WorldToViewportPoint(joint[1])
+                                local p2 = camera:WorldToViewportPoint(joint[2])
+                                
+                                espData.drawings.skeletonBorder[i].From = Vector2.new(p1.X, p1.Y)
+                                espData.drawings.skeletonBorder[i].To = Vector2.new(p2.X, p2.Y)
+                                espData.drawings.skeletonBorder[i].Visible = true
+                                
+                                espData.drawings.skeleton[i].From = Vector2.new(p1.X, p1.Y)
+                                espData.drawings.skeleton[i].To = Vector2.new(p2.X, p2.Y)
+                                espData.drawings.skeleton[i].Color = espColor
+                                espData.drawings.skeleton[i].Visible = true
+                            end
+                        end
+                    else
+                        for i = 1, 6 do
+                            espData.drawings.skeleton[i].Visible = false
+                            espData.drawings.skeletonBorder[i].Visible = false
+                        end
+                    end
+                    
+                    if Toggles.TracersESP and Toggles.TracersESP.Value then
+                        espData.drawings.tracerBorder.From = Vector2.new(screenSize.X / 2, screenSize.Y)
+                        espData.drawings.tracerBorder.To = Vector2.new(rootPos.X, rootPos.Y)
+                        espData.drawings.tracerBorder.Visible = true
+                        
+                        espData.drawings.tracer.From = Vector2.new(screenSize.X / 2, screenSize.Y)
+                        espData.drawings.tracer.To = Vector2.new(rootPos.X, rootPos.Y)
+                        espData.drawings.tracer.Color = espColor
+                        espData.drawings.tracer.Visible = true
+                    else
+                        espData.drawings.tracer.Visible = false
+                        espData.drawings.tracerBorder.Visible = false
+                    end
+                    
+                    if Toggles.HeadDot and Toggles.HeadDot.Value and head then
+                        local headScreenPos = camera:WorldToViewportPoint(head.Position)
+                        espData.drawings.headDotBorder.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
+                        espData.drawings.headDotBorder.Visible = true
+                        
+                        espData.drawings.headDot.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
+                        espData.drawings.headDot.Color = espColor
+                        espData.drawings.headDot.Visible = true
+                    else
+                        espData.drawings.headDot.Visible = false
+                        espData.drawings.headDotBorder.Visible = false
+                    end
+                    
+                    if Toggles.NameESP and Toggles.NameESP.Value then
+                        espData.drawings.name.Text = player.Name
+                        espData.drawings.name.Position = Vector2.new(rootPos.X, topLeft.Y - 15)
+                        espData.drawings.name.Color = espColor
+                        espData.drawings.name.Visible = true
+                    else
+                        espData.drawings.name.Visible = false
+                    end
+                    
+                    if Toggles.DistanceESP and Toggles.DistanceESP.Value then
+                        local distance = (camera.CFrame.Position - hrp.Position).Magnitude
+                        espData.drawings.distance.Text = math.floor(distance) .. " studs"
+                        espData.drawings.distance.Position = Vector2.new(rootPos.X, bottomLeft.Y + 3)
+                        espData.drawings.distance.Color = espColor
+                        espData.drawings.distance.Visible = true
+                    else
+                        espData.drawings.distance.Visible = false
+                    end
+                    
+                    if Toggles.HealthESP and Toggles.HealthESP.Value then
+                        local healthPercent = humanoid.Health / humanoid.MaxHealth
+                        
+                        espData.drawings.healthBarBorder.Size = Vector2.new(4, boxHeight + 2)
+                        espData.drawings.healthBarBorder.Position = Vector2.new(topLeft.X - 7, topLeft.Y - 1)
+                        espData.drawings.healthBarBorder.Visible = true
+                        
+                        espData.drawings.healthBar.Size = Vector2.new(2, boxHeight * healthPercent)
+                        espData.drawings.healthBar.Position = Vector2.new(topLeft.X - 6, topLeft.Y + (boxHeight * (1 - healthPercent)))
+                        espData.drawings.healthBar.Color = Color3.new(1 - healthPercent, healthPercent, 0)
+                        espData.drawings.healthBar.Visible = true
+                    else
+                        espData.drawings.healthBarBorder.Visible = false
+                        espData.drawings.healthBar.Visible = false
+                    end
+                end)
+            end
+        end
+        
+        -- Setup ESP
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                CreateESP(player)
+            end
+        end
+        
+        Players.PlayerAdded:Connect(function(player)
+            task.wait(1)
+            CreateESP(player)
+        end)
+        
+        Players.PlayerRemoving:Connect(function(player)
+            RemoveESP(player)
+        end)
+        
+        game:GetService("RunService").RenderStepped:Connect(function()
+            UpdateESP()
+        end)
+        
+        -- Self ESP & Effects
+        local SelfGroup = GameTabs.Visuals:AddRightGroupbox('Self ESP')
+        
+        SelfGroup:AddToggle('Chams', {
+            Text = 'Chams',
+            Default = false,
+            Tooltip = 'Highlights your character'
+        })
+        
+        SelfGroup:AddLabel('Chams Color'):AddColorPicker('ChamsColor', {
+            Default = Color3.fromRGB(0, 255, 255),
+            Title = 'Chams Color',
+            Transparency = 0.3,
+        })
+        
+        SelfGroup:AddDivider()
+        
+        SelfGroup:AddToggle('AmbientColor', {
+            Text = 'Ambient Color',
+            Default = false,
+            Tooltip = 'Changes world ambient lighting'
+        })
+        
+        SelfGroup:AddLabel('Ambient'):AddColorPicker('AmbientPicker', {
+            Default = Color3.fromRGB(128, 128, 128),
+            Title = 'Ambient Color',
+            Transparency = 0,
+        })
+        
+        -- Bullet Tracers
+        local TracerGroup = GameTabs.Visuals:AddLeftGroupbox('Bullet Tracers')
+        
+        TracerGroup:AddToggle('BulletTracers', {
+            Text = 'Enable Tracers',
+            Default = false,
+            Tooltip = 'Shows bullet trajectories'
+        })
+        
+        TracerGroup:AddLabel('Tracer Color'):AddColorPicker('TracerColor', {
+            Default = Color3.fromRGB(255, 0, 0),
+            Title = 'Tracer Color',
+            Transparency = 0,
+        })
+        
+        TracerGroup:AddSlider('TracerDuration', {
+            Text = 'Duration',
+            Min = 0.5,
+            Max = 5,
+            Default = 2,
+            Rounding = 1,
+            Suffix = 's',
+            Compact = false,
+            Tooltip = 'How long tracers stay visible'
+        })
+        
+        TracerGroup:AddSlider('TracerWidth', {
+            Text = 'Width',
+            Min = 0.1,
+            Max = 1,
+            Default = 0.3,
+            Rounding = 2,
+            Compact = false,
+            Tooltip = 'Tracer line thickness'
+        })
+        
+        -- Misc Tab
+        local MiscGroup = GameTabs.Misc:AddLeftGroupbox('Misc Options')
+        MiscGroup:AddLabel('Misc features coming soon...')
+        
+        -- Main Tab
+        local MainGroup = GameTabs.Main:AddLeftGroupbox('Main Settings')
+        MainGroup:AddLabel('Main features coming soon...')
+        
+        -- Self ESP & Effects
+        local SelfGroup = GameTabs.Visuals:AddRightGroupbox('Self ESP')
+        
+        SelfGroup:AddToggle('Chams', {
+            Text = 'Chams',
+            Default = false,
+            Tooltip = 'Highlights your character'
+        })
+        
+        SelfGroup:AddLabel('Chams Color'):AddColorPicker('ChamsColor', {
+            Default = Color3.fromRGB(0, 255, 255),
+            Title = 'Chams Color',
+            Transparency = 0.3,
+        })
+        
+        SelfGroup:AddDivider()
+        
+        SelfGroup:AddToggle('AmbientColor', {
+            Text = 'Ambient Color',
+            Default = false,
+            Tooltip = 'Changes world ambient lighting'
+        })
+        
+        SelfGroup:AddLabel('Ambient'):AddColorPicker('AmbientPicker', {
+            Default = Color3.fromRGB(128, 128, 128),
+            Title = 'Ambient Color',
+            Transparency = 0,
+        })
+        
+        -- Gun Mods
+        local GunGroup = GameTabs.Visuals:AddLeftGroupbox('Gun Mods')
+        
+        GunGroup:AddToggle('NoRecoil', {
+            Text = 'No Recoil',
+            Default = false,
+            Tooltip = 'Removes weapon recoil'
+        })
+        
+        GunGroup:AddToggle('NoSpread', {
+            Text = 'No Spread',
+            Default = false,
+            Tooltip = 'Removes bullet spread'
+        })
+        
+        GunGroup:AddToggle('InfiniteAmmo', {
+            Text = 'Infinite Ammo',
+            Default = false,
+            Tooltip = 'Unlimited ammunition'
+        })
+        
+        GunGroup:AddToggle('RapidFire', {
+            Text = 'Rapid Fire',
+            Default = false,
+            Tooltip = 'Increases fire rate'
+        })
+        
+        GunGroup:AddSlider('FireRate', {
+            Text = 'Fire Rate',
+            Min = 1,
+            Max = 10,
+            Default = 1,
+            Rounding = 1,
+            Compact = false,
+            Tooltip = 'Adjust fire rate multiplier'
+        })
+        
+        -- Bullet Tracers
+        local TracerGroup = GameTabs.Visuals:AddRightGroupbox('Bullet Tracers')
+        
+        TracerGroup:AddToggle('BulletTracers', {
+            Text = 'Enable Tracers',
+            Default = false,
+            Tooltip = 'Shows bullet trajectories'
+        })
+        
+        TracerGroup:AddLabel('Tracer Color'):AddColorPicker('TracerColor', {
+            Default = Color3.fromRGB(255, 0, 0),
+            Title = 'Tracer Color',
+            Transparency = 0,
+        })
+        
+        TracerGroup:AddSlider('TracerDuration', {
+            Text = 'Duration',
+            Min = 0.5,
+            Max = 5,
+            Default = 2,
+            Rounding = 1,
+            Suffix = 's',
+            Compact = false,
+            Tooltip = 'How long tracers stay visible'
+        })
+        
+        TracerGroup:AddSlider('TracerWidth', {
+            Text = 'Width',
+            Min = 0.1,
+            Max = 1,
+            Default = 0.3,
+            Rounding = 2,
+            Compact = false,
+            Tooltip = 'Tracer line thickness'
+        })
+        
+        -- Misc Tab
+        local MiscGroup = GameTabs.Misc:AddLeftGroupbox('Misc Options')
+        MiscGroup:AddLabel('Misc features coming soon...')
+        
+        -- Main Tab
+        local MainGroup = GameTabs.Main:AddLeftGroupbox('Main Settings')
+        MainGroup:AddLabel('Main features coming soon...')
+
+    -- ============================================
+    -- BLADE BALL
+    -- ============================================
+    elseif gameName == 'Blade Ball' then
+        GameTabs.Main = GameWindow:AddTab('Main')
+        GameTabs.Visuals = GameWindow:AddTab('Visuals')
+        GameTabs.Misc = GameWindow:AddTab('Misc')
+        GameTabs.Settings = GameWindow:AddTab('Settings')
+        
+        -- Placeholder content
+        local MainGroup = GameTabs.Main:AddLeftGroupbox('Auto Parry')
+        MainGroup:AddLabel('Auto parry features coming soon...')
+        
+        local VisualsGroup = GameTabs.Visuals:AddLeftGroupbox('ESP')
+        VisualsGroup:AddLabel('ESP features coming soon...')
+
+    -- ============================================
+    -- UNIVERSAL (DEFAULT)
+    -- ============================================
+    else
+        GameTabs.Main = GameWindow:AddTab('Main')
+        GameTabs.Misc = GameWindow:AddTab('Misc')
+        GameTabs.Settings = GameWindow:AddTab('Settings')
+
+        -- MAIN TAB - Player Management System
+        local PlayerTargetGroup = GameTabs.Main:AddLeftGroupbox('Player Target')
+        
+        local selectedPlayer = nil
+        local playerList = {}
+        
+        local function UpdatePlayerList()
+            playerList = {}
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer then
+                    table.insert(playerList, player.Name)
+                end
+            end
+            return playerList
+        end
+        
+        local function RefreshPlayerDropdown()
+            local newList = UpdatePlayerList()
+            if Options.TargetPlayer then
+                Options.TargetPlayer.Values = newList
+                Options.TargetPlayer:SetValues()
+                if Options.TargetPlayer.Display then
+                    Options.TargetPlayer:Display()
+                end
+            end
+        end
+        
+        PlayerTargetGroup:AddDropdown('TargetPlayer', {
+            Values = UpdatePlayerList(),
+            Default = 1,
+            Multi = false,
+            Text = 'Select Player',
+            Tooltip = 'Choose a player to target'
+        })
+        
+        PlayerTargetGroup:AddButton({
+            Text = 'Refresh List',
+            Func = function()
+                RefreshPlayerDropdown()
+                Library:Notify('Player list refreshed!', 2)
+            end,
+            Tooltip = 'Manually refresh the player list'
+        })
+        
+        -- Auto-refresh on player join/leave
+        Players.PlayerAdded:Connect(function()
+            task.wait(0.5)
+            RefreshPlayerDropdown()
+        end)
+        
+        Players.PlayerRemoving:Connect(function()
+            task.wait(0.5)
+            RefreshPlayerDropdown()
+        end)
+        
+        PlayerTargetGroup:AddDivider()
+        
+        -- Player Info Display
+        local playerInfoLabel = PlayerTargetGroup:AddLabel('No player selected')
+        
+        task.spawn(function()
+            while task.wait(1) do
+                pcall(function()
+                    if Options.TargetPlayer and Options.TargetPlayer.Value then
+                        local targetPlayer = Players:FindFirstChild(Options.TargetPlayer.Value)
+                        if targetPlayer and targetPlayer.Character then
+                            local char = targetPlayer.Character
+                            local hrp = char:FindFirstChild("HumanoidRootPart")
+                            local hum = char:FindFirstChild("Humanoid")
+                            
+                            if hrp and hum then
+                                local localHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                local distance = localHRP and math.floor((localHRP.Position - hrp.Position).Magnitude) or "N/A"
+                                local health = math.floor(hum.Health)
+                                local maxHealth = math.floor(hum.MaxHealth)
+                                
+                                playerInfoLabel:SetText(string.format(
+                                    "%s\nHealth: %d/%d\nDistance: %s studs",
+                                    targetPlayer.Name, health, maxHealth, distance
+                                ))
+                            end
+                        else
+                            playerInfoLabel:SetText('Player unavailable')
+                        end
+                    else
+                        playerInfoLabel:SetText('No player selected')
+                    end
+                end)
+            end
+        end)
+        
+        -- Player Actions
+        local ActionsGroup = GameTabs.Main:AddRightGroupbox('Player Actions')
+        
+        ActionsGroup:AddButton({
+            Text = 'Goto Player',
+            Func = function()
+                if not Options.TargetPlayer or not Options.TargetPlayer.Value then
+                    Library:Notify('Select a player first!', 3)
+                    return
+                end
+                
+                local target = Players:FindFirstChild(Options.TargetPlayer.Value)
+                if target and target.Character then
+                    local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+                    local localHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    
+                    if targetHRP and localHRP then
+                        localHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
+                        Library:Notify('Teleported to ' .. target.Name, 2)
+                    end
+                end
+            end,
+            Tooltip = 'Teleport to the selected player'
+        })
+        
+        ActionsGroup:AddSlider('FlingIntensity', {
+            Text = 'Fling Power',
+            Min = 1000,
+            Max = 50000,
+            Default = 10000,
+            Rounding = 0,
+            Compact = false,
+            Tooltip = 'How hard to fling the player'
+        })
+        
+        local flinging = false
+        ActionsGroup:AddButton({
+            Text = 'Fling Player',
+            Func = function()
+                if not Options.TargetPlayer or not Options.TargetPlayer.Value then
+                    Library:Notify('Select a player first!', 3)
+                    return
+                end
+                
+                if flinging then
+                    Library:Notify('Already flinging someone!', 3)
+                    return
+                end
+                
+                local target = Players:FindFirstChild(Options.TargetPlayer.Value)
+                if not target or not target.Character then
+                    Library:Notify('Target not found!', 3)
+                    return
+                end
+                
+                local localChar = LocalPlayer.Character
+                if not localChar then return end
+                
+                local localHRP = localChar:FindFirstChild("HumanoidRootPart")
+                local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+                
+                if not localHRP or not targetHRP then
+                    Library:Notify('Character parts missing!', 3)
+                    return
+                end
+                
+                flinging = true
+                Library:Notify('Flinging ' .. target.Name .. '...', 2)
+                
+                -- Save original position
+                local originalPos = localHRP.CFrame
+                local originalVelocity = localHRP.Velocity
+                
+                -- Store original physics
+                local originalMass = localHRP.AssemblyMass
+                
+                -- Create fling loop
+                task.spawn(function()
+                    local startTime = tick()
+                    local maxDuration = 3 -- 3 seconds max
+                    local flingPower = Options.FlingIntensity and Options.FlingIntensity.Value or 10000
+                    
+                    -- Disable character physics temporarily
+                    for _, part in pairs(localChar:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                            part.Massless = true
+                        end
+                    end
+                    
+                    while flinging and (tick() - startTime) < maxDuration do
+                        if not target.Character or not targetHRP.Parent then
+                            break
+                        end
+                        
+                        -- Teleport loop
+                        localHRP.CFrame = targetHRP.CFrame
+                        localHRP.Velocity = Vector3.new(
+                            math.random(-flingPower, flingPower),
+                            math.random(-flingPower, flingPower),
+                            math.random(-flingPower, flingPower)
+                        )
+                        
+                        task.wait(0.01)
+                    end
+                    
+                    -- Restore physics
+                    for _, part in pairs(localChar:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = true
+                            part.Massless = false
+                        end
+                    end
+                    
+                    -- Return to original position
+                    task.wait(0.1)
+                    localHRP.CFrame = originalPos
+                    localHRP.Velocity = Vector3.new(0, 0, 0)
+                    
+                    flinging = false
+                    Library:Notify('Fling complete!', 2)
+                end)
+            end,
+            DoubleClick = true,
+            Tooltip = 'Double click to fling the player'
+        })
+        
+        ActionsGroup:AddDivider()
+        
+        local spectating = false
+        local spectateConnection = nil
+        
+        ActionsGroup:AddButton({
+            Text = 'Spectate',
+            Func = function()
+                if not Options.TargetPlayer or not Options.TargetPlayer.Value then
+                    Library:Notify('Select a player first!', 3)
+                    return
+                end
+                
+                local target = Players:FindFirstChild(Options.TargetPlayer.Value)
+                if target then
+                    workspace.CurrentCamera.CameraSubject = target.Character and target.Character:FindFirstChild("Humanoid")
+                    spectating = true
+                    Library:Notify('Spectating ' .. target.Name, 2)
+                end
+            end,
+            Tooltip = 'Spectate the selected player'
+        })
+        
+        ActionsGroup:AddButton({
+            Text = 'Stop Spectate',
+            Func = function()
+                workspace.CurrentCamera.CameraSubject = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+                spectating = false
+                Library:Notify('Stopped spectating', 2)
+            end,
+            Tooltip = 'Return camera to yourself'
+        })
+        
+        ActionsGroup:AddDivider()
+        
+        ActionsGroup:AddButton({
+            Text = 'View Player',
+            Func = function()
+                if not Options.TargetPlayer or not Options.TargetPlayer.Value then
+                    Library:Notify('Select a player first!', 3)
+                    return
+                end
+                
+                local target = Players:FindFirstChild(Options.TargetPlayer.Value)
+                if target then
+                    local userId = target.UserId
+                    local url = "https://www.roblox.com/users/" .. userId .. "/profile"
+                    
+                    if setclipboard then
+                        setclipboard(url)
+                        Library:Notify('Profile URL copied!', 3)
+                    else
+                        Library:Notify('User ID: ' .. userId, 4)
+                    end
+                end
+            end,
+            Tooltip = 'Copy profile URL to clipboard'
+        })
+        
+        ActionsGroup:AddButton({
+            Text = 'Annoy Player',
+            Func = function()
+                if not Options.TargetPlayer or not Options.TargetPlayer.Value then
+                    Library:Notify('Select a player first!', 3)
+                    return
+                end
+                
+                local target = Players:FindFirstChild(Options.TargetPlayer.Value)
+                if not target or not target.Character then return end
+                
+                Library:Notify('Annoying ' .. target.Name .. '...', 2)
+                
+                task.spawn(function()
+                    for i = 1, 20 do
+                        pcall(function()
+                            local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+                            local localHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            
+                            if targetHRP and localHRP then
+                                localHRP.CFrame = targetHRP.CFrame * CFrame.new(
+                                    math.random(-5, 5),
+                                    math.random(-2, 2),
+                                    math.random(-5, 5)
+                                )
+                                task.wait(0.1)
+                            end
+                        end)
+                    end
+                end)
+            end,
+            DoubleClick = true,
+            Tooltip = 'Double click to rapidly teleport around player'
+        })
+        
+        -- Character Controls
+        local PlayerGroup = GameTabs.Main:AddLeftGroupbox('Character')
+
+        PlayerGroup:AddSlider('WalkSpeed', {
+            Text = 'Walk Speed',
+            Min = 16,
+            Max = 500,
+            Default = 16,
+            Rounding = 0,
+            Compact = false,
+            Tooltip = 'Adjust your walk speed'
+        })
+
+        PlayerGroup:AddSlider('JumpPower', {
+            Text = 'Jump Power',
+            Min = 50,
+            Max = 500,
+            Default = 50,
+            Rounding = 0,
+            Compact = false,
+            Tooltip = 'Adjust your jump power'
+        })
+
+        -- Continuous speed/jump update loop
+        task.spawn(function()
+            while task.wait() do
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("Humanoid") then
+                        local hum = char.Humanoid
+                        if Options.WalkSpeed then
+                            hum.WalkSpeed = Options.WalkSpeed.Value
+                        end
+                        if Options.JumpPower then
+                            hum.JumpPower = Options.JumpPower.Value
+                        end
+                    end
+                end)
+            end
+        end)
+
+        PlayerGroup:AddToggle('InfiniteJump', {
+            Text = 'Infinite Jump',
+            Default = false,
+            Tooltip = 'Jump infinitely in the air'
+        })
+
+        game:GetService("UserInputService").JumpRequest:Connect(function()
+            if Toggles.InfiniteJump and Toggles.InfiniteJump.Value then
+                pcall(function()
+                    LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end)
+            end
+        end)
+
+        PlayerGroup:AddToggle('NoClip', {
+            Text = 'No Clip',
+            Default = false,
+            Tooltip = 'Walk through walls'
+        })
+
+        task.spawn(function()
+            game:GetService("RunService").Stepped:Connect(function()
+                if Toggles.NoClip and Toggles.NoClip.Value then
+                    pcall(function()
+                        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                            end
+                        end
+                    end)
+                end
+            end)
+        end)
+
+        PlayerGroup:AddButton({
+            Text = 'Reset Character',
+            Func = function()
+                pcall(function()
+                    LocalPlayer.Character.Humanoid.Health = 0
+                end)
+            end,
+            Tooltip = 'Respawn your character'
+        })
+
+        -- Movement Features
+        local MovementGroup = GameTabs.Main:AddRightGroupbox('Movement')
+
+        MovementGroup:AddToggle('Fly', {
+            Text = 'Fly Mode',
+            Default = false,
+            Tooltip = 'Use WASD + Space/Ctrl to fly'
+        })
+
+        local flyConnection
+        local flyBodyVelocity
+        Toggles.Fly:OnChanged(function(state)
+            if state then
+                local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+
+                flyBodyVelocity = Instance.new("BodyVelocity")
+                flyBodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+                flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                flyBodyVelocity.Parent = hrp
+
+                flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                    if not Toggles.Fly.Value then return end
+                    
+                    local flySpeed = Options.FlySpeed and Options.FlySpeed.Value or 100
+
+                    local UIS = game:GetService("UserInputService")
+                    local cam = workspace.CurrentCamera.CFrame
+                    local move = Vector3.new()
+
+                    if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + cam.LookVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - cam.LookVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cam.RightVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cam.RightVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.Space) then move = move + Vector3.new(0, 1, 0) end
+                    if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then move = move - Vector3.new(0, 1, 0) end
+
+                    if move.Magnitude > 0 then
+                        flyBodyVelocity.Velocity = move.Unit * flySpeed
+                    else
+                        flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                    end
+                end)
+            else
+                if flyConnection then 
+                    flyConnection:Disconnect()
+                    flyConnection = nil
+                end
+                if flyBodyVelocity then 
+                    flyBodyVelocity:Destroy()
+                    flyBodyVelocity = nil
+                end
+            end
+        end)
+
+        MovementGroup:AddSlider('FlySpeed', {
+            Text = 'Fly Speed',
+            Min = 50,
+            Max = 500,
+            Default = 100,
+            Rounding = 0,
+            Compact = false,
+            Tooltip = 'Adjust fly speed'
+        })
+
+        MovementGroup:AddButton({
+            Text = 'Teleport to Mouse',
+            Func = function()
+                pcall(function()
+                    local mouse = LocalPlayer:GetMouse()
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+                end)
+                Library:Notify('Teleported to mouse!', 2)
+            end,
+            Tooltip = 'Teleports you to where your mouse is pointing'
+        })
+
+        -- MISC TAB
+        local UtilityGroup = GameTabs.Misc:AddLeftGroupbox('Utility')
+
+        UtilityGroup:AddButton({
+            Text = 'Anti AFK',
+            Func = function()
+                local vu = game:GetService("VirtualUser")
+                LocalPlayer.Idled:Connect(function()
+                    vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                    task.wait(1)
+                    vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                end)
+                Library:Notify('Anti AFK enabled!', 3)
+            end,
+            Tooltip = 'Prevents getting kicked for inactivity'
+        })
+
+        UtilityGroup:AddToggle('FullBright', {
+            Text = 'Full Bright',
+            Default = false,
+            Tooltip = 'Makes everything bright'
+        }):OnChanged(function(state)
+            local Lighting = game:GetService("Lighting")
+            if state then
+                Lighting.Brightness = 2
+                Lighting.ClockTime = 14
+                Lighting.FogEnd = 100000
+                Lighting.GlobalShadows = false
+                Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+            else
+                Lighting.Brightness = 1
+                Lighting.ClockTime = 12
+                Lighting.FogEnd = 100000
+                Lighting.GlobalShadows = true
+                Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+            end
+        end)
+
+        UtilityGroup:AddToggle('RemoveFog', {
+            Text = 'Remove Fog',
+            Default = false,
+            Tooltip = 'Removes fog from the game'
+        }):OnChanged(function(state)
+            local Lighting = game:GetService("Lighting")
+            if state then
+                Lighting.FogEnd = 100000
+                for _, v in pairs(Lighting:GetDescendants()) do
+                    if v:IsA("Atmosphere") then
+                        v.Density = 0
+                    end
+                end
+            else
+                Lighting.FogEnd = 10000
+            end
+        end)
+
+        UtilityGroup:AddSlider('FOV', {
+            Text = 'Field of View',
+            Min = 70,
+            Max = 120,
+            Default = 70,
+            Rounding = 0,
+            Compact = false,
+            Tooltip = 'Adjust camera FOV'
+        })
+
+        task.spawn(function()
+            while task.wait() do
+                pcall(function()
+                    if Options.FOV then
+                        workspace.CurrentCamera.FieldOfView = Options.FOV.Value
+                    end
+                end)
+            end
+        end)
+
+        -- Visual Features
+        local VisualGroup = GameTabs.Misc:AddRightGroupbox('Visual')
+
+        VisualGroup:AddToggle('ESPPlayers', {
+            Text = 'Player ESP',
+            Default = false,
+            Tooltip = 'See players through walls'
+        })
+
+        local espConnections = {}
+        Toggles.ESPPlayers:OnChanged(function(state)
+            if state then
+                -- Clear old ESP
+                for _, connection in pairs(espConnections) do
+                    connection:Disconnect()
+                end
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "ESP"
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.Parent = player.Character or player.CharacterAdded:Wait()
+                    end
+                end
+                
+                table.insert(espConnections, Players.PlayerAdded:Connect(function(player)
+                    if Toggles.ESPPlayers.Value then
+                        player.CharacterAdded:Connect(function(char)
+                            if Toggles.ESPPlayers.Value then
+                                local highlight = Instance.new("Highlight")
+                                highlight.Name = "ESP"
+                                highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                highlight.Parent = char
+                            end
+                        end)
+                    end
+                end))
+            else
+                -- Remove ESP
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player.Character then
+                        for _, v in pairs(player.Character:GetDescendants()) do
+                            if v.Name == "ESP" then
+                                v:Destroy()
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+
+        VisualGroup:AddToggle('Tracers', {
+            Text = 'Player Tracers',
+            Default = false,
+            Tooltip = 'Draw lines to players'
+        })
+
+        local tracerConnections = {}
+        Toggles.Tracers:OnChanged(function(state)
+            if state then
+                for _, connection in pairs(tracerConnections) do
+                    connection:Disconnect()
+                end
+                
+                table.insert(tracerConnections, game:GetService("RunService").RenderStepped:Connect(function()
+                    if not Toggles.Tracers.Value then return end
+                    pcall(function()
+                        for _, player in pairs(Players:GetPlayers()) do
+                            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                                -- Tracer logic would go here (requires Drawing library which may not be available)
+                            end
+                        end
+                    end)
+                end))
+            else
+                for _, connection in pairs(tracerConnections) do
+                    connection:Disconnect()
+                end
+            end
+        end)
+
+        VisualGroup:AddButton({
+            Text = 'Remove Textures',
+            Func = function()
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("Decal") or v:IsA("Texture") then
+                        v:Destroy()
+                    end
+                end
+                Library:Notify('Textures removed!', 3)
+            end,
+            Tooltip = 'Removes all textures for better FPS'
+        })
+    end
+
+    -- ============================================
+    -- SETTINGS TAB (ALL GAMES)
+    -- ============================================
+    local MenuGroup = GameTabs.Settings:AddLeftGroupbox('Menu')
+    
+    MenuGroup:AddButton('Unload', function() 
+        Library:Unload() 
+    end)
+    
+    MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { 
+        Default = 'End', 
+        NoUI = true, 
+        Text = 'Menu keybind' 
+    })
+    
+    Library.ToggleKeybind = Options.MenuKeybind
+
+    -- Theme & Save Manager
+    ThemeManager:SetLibrary(Library)
+    SaveManager:SetLibrary(Library)
+    SaveManager:IgnoreThemeSettings()
+    SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
+    ThemeManager:SetFolder('snipez')
+    SaveManager:SetFolder('snipez/' .. gameName:lower():gsub(' ', '_'))
+    SaveManager:BuildConfigSection(GameTabs.Settings)
+    ThemeManager:ApplyToTab(GameTabs.Settings)
+
+    Library:Notify(gameName .. ' menu loaded successfully!')
+end
+
+-- ============================================
+-- GAME LOADING FUNCTION
+-- ============================================
+local function LoadGame(gameName)
+    Library:Notify('Preparing ' .. gameName .. '...')
+    task.wait(math.random(1, 2))
+    Library:Notify('Loading ' .. gameName .. '...')
+    task.wait(1.5)
+    Library:Notify('Finalizing...')
+    task.wait(2)
+    CreateGameMenu(gameName)
+end
+
+-- ============================================
+-- AUTO DETECTION FUNCTION
+-- ============================================
+local function AutoDetectGame()
+    local detected = Games[game.PlaceId]
+    
+    if detected then
+        Library:Notify('Detected: ' .. detected)
+        LoadGame(detected)
+    else
+        Library:Notify('Game not in supported list')
+        Library:Notify('Defaulting to Universal...')
+        LoadGame('Universal (WIP)')
+    end
+end
+
+-- ============================================
+-- MAIN UI CONTROLS
+-- ============================================
+local MainGroup = Tabs.Main:AddLeftGroupbox('Game Detection')
+
+MainGroup:AddButton({
+    Text = 'Auto Detect Game',
+    Func = AutoDetectGame,
+    Tooltip = 'Automatically detects your game. Defaults to Universal if not supported.'
+})
+
+MainGroup:AddDivider()
+
+MainGroup:AddDropdown('SelectedGame', {
+    Values = GamesList,
+    Default = 7, -- Universal (WIP)
+    Multi = false,
+    Text = 'Manual Select',
+    Tooltip = 'Manually choose a game to load'
+})
+
+MainGroup:AddButton({
+    Text = 'Load Selected Game',
+    Func = function()
+        local gameName = Options.SelectedGame.Value or 'Universal (WIP)'
+        LoadGame(gameName)
+    end
+})
+
+-- ============================================
+-- INFO SECTION
+-- ============================================
+local InfoGroup = Tabs.Main:AddRightGroupbox('Game Info')
+InfoGroup:AddLabel('Place ID: ' .. game.PlaceId)
+
+local success, productInfo = pcall(function()
+    return game:GetService('MarketplaceService'):GetProductInfo(game.PlaceId)
+end)
+
+if success and productInfo then
+    InfoGroup:AddLabel('Game: ' .. productInfo.Name)
+end
+
+local supportedStatus = Games[game.PlaceId] and '✓ Supported' or '✗ Not Supported'
+InfoGroup:AddLabel('Status: ' .. supportedStatus)
+
+-- ============================================
+-- UI SETTINGS
+-- ============================================
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+
+MenuGroup:AddButton('Unload', function()
+    Library:Unload()
+end)
+
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', {
+    Default = 'End',
+    NoUI = true,
+    Text = 'Menu keybind'
+})
+
+Library.ToggleKeybind = Options.MenuKeybind
+
+-- ============================================
+-- THEME & SAVE MANAGER
+-- ============================================
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
+
+ThemeManager:SetFolder('snipez')
+SaveManager:SetFolder('snipez/universal')
+
+SaveManager:BuildConfigSection(Tabs['UI Settings'])
+ThemeManager:ApplyToTab(Tabs['UI Settings'])
+SaveManager:LoadAutoloadConfig()
+
+-- ============================================
+-- INITIALIZATION COMPLETE
+-- ============================================
+Library:Notify('snipez loaded successfully')
+Library:Notify('Press "Auto Detect Game" to begin')
